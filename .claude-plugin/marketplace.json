@@ -10,6 +10,11 @@
       "name": "nbis",
       "source": "./plugins/nbis",
       "description": "General skills from NBIS: /nbis:deeper and /nbis:verify."
+    },
+    {
+      "name": "nbis-safety",
+      "source": "./plugins/nbis-safety",
+      "description": "Safe use of AI coding agents at NBIS: /nbis-safety:safe-setup."
     }
   ]
 }
