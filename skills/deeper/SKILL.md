@@ -26,7 +26,7 @@ what result counts as a pass), and say whether it can be run today. When the
 task is about whether code or an algorithm is correct, the `verify` skill in
 this plugin lists the methods.
 
-Then rewrite the user's prompt to ask for exactly that, ending with the check
-from question 4 and what counts as a pass, in its own fenced code block so it
-can be copied. Stop there: do not run the rewritten prompt until the user
-says so.
+Then rewrite the user's prompt to ask for exactly that. Put the whole
+rewritten prompt in a single fenced code block, so it can be copied and run
+as it is, and end it with the check from question 4 and what counts as a
+pass. Stop there: do not run the rewritten prompt until the user says so.
