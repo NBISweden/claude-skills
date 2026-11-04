@@ -1,0 +1,11 @@
+{
+  "name": "nbisweden",
+  "owner": { "name": "NBIS", "url": "https://nbis.se" },
+  "plugins": [
+    {
+      "name": "nbis",
+      "source": "./",
+      "description": "Skills from NBIS: /nbis:deeper and /nbis:verify."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "nbis",
+  "version": "0.1.0",
+  "description": "Skills from NBIS: /nbis:deeper turns a task into a deeper prompt, /nbis:verify checks that code is correct with evidence from outside the model.",
+  "author": { "name": "NBIS", "url": "https://nbis.se" },
+  "repository": "https://github.com/NBISweden/claude-skills",
+  "license": "MIT"
+}
