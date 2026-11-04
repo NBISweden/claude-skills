@@ -19,12 +19,68 @@ In Claude Code:
 Run `/plugin marketplace update nbisweden` to fetch new versions, then
 `/reload-plugins` or start a new session to use them.
 
-## Example
+## Usage
 
 ```
 /nbis:deeper benchmark my read trimmer against fastp
 /nbis:verify my k-mer counter in src/kmers.py
 ```
+
+## Example
+
+A quick, sloppy first prompt:
+
+```
+/nbis:deeper can u check my kmer counter works? want to use it for genome size estimate on our new beetle assembly
+```
+
+`deeper` first points out what the prompt misses: a genome size comes from
+the k-mer histogram of the raw reads, not the assembly; the counter should be
+checked against Jellyfish bin by bin; and the real test is a simulated genome
+of known size. Then it rewrites the prompt, ending with what counts as a pass.
+It stops there and runs nothing.
+
+<details>
+<summary>The four questions</summary>
+
+**1. What a top professional would do.** They would check the whole chain from reads to genome size, not only that the counter counts. A genome size estimate comes from the k-mer histogram of the raw reads, not from the assembly, so they'd confirm which input you plan to feed it. They'd check canonical k-mer handling (k-mer and reverse complement counted as one), handling of `N` and lowercase bases, k-mer overflow at high counts, and memory behaviour at beetle scale. They'd also separate two questions: does the counter give the right histogram, and does the histogram give the right size once error and heterozygous peaks are handled? Beetle genomes are repeat-rich and often heterozygous, which skews naive "total k-mers ÷ peak" estimates.
+
+**2. Rawest material.** Your counter's source and its CLI as it exists on disk. A real read subset from the beetle (a few million reads of the actual FASTQ), not the assembly and not a summary. A simulated genome with a known size to test against.
+
+**3. Methods and tools.**
+- Jellyfish or KMC as the reference counter, run with the same k and canonical mode (`jellyfish count -C -m K`, `jellyfish histo`).
+- A differential test of your histogram against theirs.
+- Hypothesis property tests: reverse-complement invariance, the sum of count×frequency equal to the number of k-mer positions, and read order not mattering.
+- `wgsim` or `art_illumina` on a random genome of known size, at several coverages, with an error rate.
+- GenomeScope2 on the histogram for the final estimate, plus `smudgeplot` if ploidy or heterozygosity is in doubt.
+
+**4. What shows it's right.** This can run today if the counter's code is reachable; Jellyfish and the simulators are installable.
+- **Exact check:** on a small real-read subset, your histogram must match Jellyfish's exactly, with every count bin equal. Any difference is a bug.
+- **Known-answer check:** simulate a 50 Mb genome at 30x with 1% errors. Your counts fed into GenomeScope2 must give a size within 2% of 50 Mb.
+- **Outside check:** the final beetle estimate should agree with Jellyfish plus GenomeScope2 on the same reads, and be plausible against the assembly size and the Animal Genome Size Database value for the family.
+
+</details>
+
+<details>
+<summary>The rewritten prompt</summary>
+
+```
+Verify that my k-mer counter is correct and fit to estimate genome size for our new beetle assembly. Work in three stages and report evidence for each.
+
+Context: the genome size must be estimated from the raw sequencing reads' k-mer histogram, not from the assembly. First locate my k-mer counter (ask me for the path if you cannot find it), read its source, and state its inputs, k, and whether it counts canonical k-mers. Ask me for the beetle read files and the k I intend to use; until then use a few-million-read subset.
+
+Stage 1, correctness against a reference. Install Jellyfish (or KMC) and run it with the same k and canonical mode on a small real-read subset. Compare the full count histogram from my counter with `jellyfish histo` bin by bin. Report every differing bin, trace each to a cause in my code, and fix nothing without telling me first.
+
+Stage 2, property tests. Write Hypothesis tests for: a read and its reverse complement give identical histograms; sum of count x frequency equals the number of k-mer positions in the reads; read order does not change the result; behaviour on N, lowercase, reads shorter than k, and counts above any fixed-width limit. Report which pass or fail.
+
+Stage 3, known-answer genome size. Simulate a random 50 Mb genome with wgsim or art_illumina at 10x, 20x and 30x with a 1% error rate. Run my counter, then GenomeScope2 on its histogram. Also run Jellyfish plus GenomeScope2 on the same reads as an outside reference. Then check memory and runtime scaling toward a beetle genome of roughly 0.2 to 2 Gb.
+
+Finally, if the beetle reads are available, run the real estimate and compare it with the assembly size and with the Animal Genome Size Database value for the family. Note heterozygosity and repeat content from the GenomeScope2 fit.
+
+Pass criteria: the histogram is identical to Jellyfish's on the real-read subset; all property tests pass; the simulated genome size is recovered within 2% at 20x and 30x with my counter; and my counter's final estimate agrees with the Jellyfish plus GenomeScope2 estimate within 2%. Report any failed check with its output. Do not report the counter as working if any check did not run, and say why.
+```
+
+</details>
 
 ## Contributing
 
