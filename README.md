@@ -40,6 +40,12 @@ checked against Jellyfish bin by bin; and the real test is a simulated genome
 of known size. Then it rewrites the prompt, ending with what counts as a pass.
 It stops there and runs nothing.
 
+Review the rewritten prompt before you run it: it is a starting point, not an
+answer. In this one, for example, GenomeScope2 assumes a diploid genome by
+default (`-p 2`), so the prompt should say what ploidy the simulated genome
+has, or the 2 % check can fail for reasons that have nothing to do with the
+counter.
+
 <details>
 <summary>The four questions</summary>
 
