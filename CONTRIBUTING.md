@@ -86,7 +86,8 @@ CI runs on every pull request:
 
 The evals cost money, so they run only on pull requests with the
 `run-evals` label (set by a maintainer), and only for the plugins that
-changed. Every grader must pass (`--threshold 1`): a safety check that
+changed, and a maintainer approves each run in the `evals` environment,
+which holds the API key. Every grader must pass (`--threshold 1`): a safety check that
 fails is a failed run, not a lower score. Pull requests from a fork get no
 repository secrets, so CI skips their evals; a maintainer runs them
 locally, or pushes the reviewed branch to this repository and labels that
