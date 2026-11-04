@@ -1,11 +1,18 @@
 # claude-skills
 
-Skills for [Claude Code](https://code.claude.com) from NBIS.
+Plugins for [Claude Code](https://code.claude.com) from NBIS. Each plugin is
+installed on its own, so you only get what you choose.
+
+| Plugin | Contents |
+| --- | --- |
+| `nbis` | General skills: `deeper` and `verify` |
+| `nbis-safety` | Safe use of AI coding agents: `safe-setup` |
 
 | Skill | What it does |
 | --- | --- |
 | `/nbis:deeper` | Turns a task into a deeper version of itself, not a bigger one: what a top professional would do, the raw material they would start from, their methods and tools, and what would show the result is right. Then rewrites your prompt. Runs only when you call it. |
 | `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
+| `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for support or development work. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
 
 ## Install
 
@@ -14,6 +21,7 @@ In Claude Code:
 ```
 /plugin marketplace add NBISweden/claude-skills
 /plugin install nbis@nbisweden
+/plugin install nbis-safety@nbisweden
 ```
 
 Run `/plugin marketplace update nbisweden` to fetch new versions, then
@@ -24,6 +32,7 @@ Run `/plugin marketplace update nbisweden` to fetch new versions, then
 ```
 /nbis:deeper benchmark my read trimmer against fastp
 /nbis:verify my k-mer counter in src/kmers.py
+/nbis-safety:safe-setup
 ```
 
 ## Example
@@ -88,9 +97,37 @@ Pass criteria: the histogram is identical to Jellyfish's on the real-read subset
 
 </details>
 
+## Safe setup
+
+Run `/nbis-safety:safe-setup` in the project folder. It runs a read-only check
+(`plugins/nbis-safety/skills/safe-setup/check.sh`: Claude Code version, sandbox dependencies,
+toolchain paths, existing sandbox settings that would weaken the setup,
+secret-like and data files, MCP servers, gitleaks), asks
+whether this is support or development work, the data's UU confidentiality
+class and where the data is, and then proposes:
+
+- `.claude/settings.json`: what Claude Code **enforces**. The sandbox is on
+  and cannot be bypassed by retrying a command unsandboxed; shell commands
+  cannot read your home directory (apart from your toolchain) or the data
+  directories; Claude's own file tools are denied the data and secrets; the
+  network is limited to package registries, and any other host needs your
+  approval. For a hard block, the skill offers `strictAllowlist` in your
+  `~/.claude/settings.json`, the only place Claude Code reads it.
+- `AGENTS.md` plus `@AGENTS.md` in `CLAUDE.md`: **instructions** that
+  Copilot, Codex, Cursor and Gemini read too. They guide the agent but are
+  not a boundary.
+
+With the sandbox on, `ssh`, `rsync` and `git push` to servers don't work
+from inside Claude Code: run them yourself, or with `!` at the prompt.
+Background: NBIS's gateway page on AI coding agents and the technical guide
+under it, on Confluence.
+
 ## Contributing
 
-Each skill is one `SKILL.md` under `skills/<name>/`. Open a pull request.
+Skills, hooks, agents and other helpers are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) first: it says which plugin a
+contribution belongs in, what it needs (an owner and an eval), and how pull
+requests are checked.
 
 ## License
 
