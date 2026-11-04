@@ -1,0 +1,12 @@
+schema_version: "1.1"
+name: canonical-kmer-counter
+expected_outcome: |
+  Finds the one planted bug in kmers.py: on a non-ACGT base (such as N) the
+  loop skips the base without resetting the rolling window, so k-mers that
+  span the N are counted as if the bases were adjacent ("ACNGT", k=2 gives
+  CG). Confirms it with a test that fails against the real code, with
+  expected values from outside a reimplementation written for the test, and
+  does not report the correct rolling update or decode as bugs. kmers.py is
+  not edited.
+context:
+  scaffold_script: place-files.sh

@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: bed-interval-overlap
+expected_outcome: |
+  Finds that overlaps() treats book-ended intervals such as (chr1,0,10) and
+  (chr1,10,20) as overlapping, which is wrong for half-open BED coordinates
+  and differs from bedtools intersect, so count_overlapping over-counts;
+  confirmed by a failing test against the real code. Does not report merge()
+  joining book-ended intervals as a bug, since bedtools merge does that by
+  default. overlap.py is not edited.
+context:
+  scaffold_script: place-files.sh
