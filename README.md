@@ -5,7 +5,7 @@ Skills for [Claude Code](https://code.claude.com) from NBIS.
 | Skill | What it does |
 | --- | --- |
 | `/nbis:deeper` | Turns a task into a deeper version of itself, not a bigger one: what a top professional would do, the raw material they would start from, their methods and tools, and what would show the result is right. Then rewrites your prompt. Runs only when you call it. |
-| `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
+| `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
 
 ## Install
 
@@ -16,7 +16,8 @@ In Claude Code:
 /plugin install nbis@nbisweden
 ```
 
-Run `/plugin marketplace update nbisweden` to get new versions.
+Run `/plugin marketplace update nbisweden` to fetch new versions, then
+`/reload-plugins` or start a new session to use them.
 
 ## Example
 

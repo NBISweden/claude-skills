@@ -1,6 +1,6 @@
 ---
 name: deeper
-description: Turn a task into a deeper version of itself, not a bigger one, and rewrite its prompt. Use only when the user asks for it ("/deeper", "go deeper", "a deeper version of this").
+description: Rewrite the named task into a deeper, independently checkable prompt, not a bigger one. Invoked explicitly with /nbis:deeper; stops after presenting the rewritten prompt.
 disable-model-invocation: true
 ---
 
