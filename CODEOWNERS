@@ -1,0 +1,7 @@
+# Owners review changes to what they own. Add yourself when you contribute.
+# Later lines win, so keep the most specific paths last.
+
+*                                   @jhagberg
+/plugins/nbis/                      @jhagberg
+/plugins/nbis-safety/               @jhagberg
+/.github/                           @jhagberg
