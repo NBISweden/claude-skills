@@ -112,7 +112,7 @@ jobs:
           fail=0
           for p in $PLUGINS; do   # unquoted on purpose: a space-separated list of slugs
             claude plugin eval "plugins/$p" --runs 1 --model sonnet \
-              --scaffold --allow-tools Bash Write Edit --trust-plugin --no-publish \
+              --scaffold --allow-tools Bash Write Edit --trust-plugin --no-publish --judge-model sonnet \
               --max-cost-usd 5 --threshold 1 --report "eval-reports/$p.html" || fail=1
           done
           exit "$fail"
