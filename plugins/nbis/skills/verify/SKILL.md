@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Check that an algorithm, tool or pipeline is correct using executable evidence - property-based and differential tests, real data with a known answer, TLA+ for concurrency, Lean 4 proofs for core algorithms. Use for correctness checks and bug hunts in code, not for workflow design or documentation.
+description: Check that an algorithm, tool or pipeline is correct using executable evidence - property-based and differential tests, real data with a known answer, TLA+ for concurrency, Lean 4 proofs for core algorithms. Use whenever the user asks to look for bugs in code, whether code is correct, or whether it behaves like a reference tool, before answering from reading the code alone. Not for workflow design or documentation.
 ---
 
 # Verify
