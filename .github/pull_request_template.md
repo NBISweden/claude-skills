@@ -4,7 +4,7 @@
 
 ## Checklist
 
-- [ ] I am in `CODEOWNERS` for what I added or own
+- [ ] I am listed in the `CODEOWNERS` for the files/folders I added or own
 - [ ] Version bumped in the plugin's `plugin.json` (patch for fixes, minor for new items)
 - [ ] At least one eval case covers the change, and I ran it locally:
       `claude plugin eval plugins/<plugin> --scaffold --trust-plugin`
