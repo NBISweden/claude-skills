@@ -36,6 +36,16 @@ jobs:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
         run: scripts/check-structure.sh "$BASE"
 
+      - name: CODEOWNERS is valid
+        # GitHub silently ignores lines it cannot use, such as an unknown user.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          errors=$(gh api "repos/$GITHUB_REPOSITORY/codeowners/errors?ref=$REF" \
+            --jq '.errors[] | "CODEOWNERS:\(.line): \(.message)"')
+          [ -z "$errors" ] || { echo "$errors"; exit 1; }
+
       - name: Shellcheck
         run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck
 

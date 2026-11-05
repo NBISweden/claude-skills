@@ -81,6 +81,7 @@ CI runs on every pull request:
 - `claude plugin validate --strict` on the marketplace and every plugin
 - a structure check: every plugin has a lowercase-and-hyphens name, an
   owner, an eval case and a version bump when it changed
+- a check that GitHub accepts every line in `CODEOWNERS` (no unknown users)
 - `shellcheck` and the plugin's `tests/`
 - `gitleaks` on the changes
 
