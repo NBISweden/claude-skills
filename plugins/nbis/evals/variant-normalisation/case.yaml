@@ -4,5 +4,5 @@ expected_outcome: |
   Answers the four questions specifically for indel normalisation against
   bcftools norm, names a concrete check with a pass criterion (for example
   a truth set or bcftools norm output on the same VCF and reference FASTA,
-  with the reference version pinned), puts the rewritten prompt in a fenced
+  matched to the VCF build), puts the rewritten prompt in a fenced
   code block, and stops without running the comparison.

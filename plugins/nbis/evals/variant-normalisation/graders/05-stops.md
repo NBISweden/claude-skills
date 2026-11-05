@@ -1,7 +1,6 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: tool_used
+tool: Bash
+min: 0
+max: 0
 ---
-
-The reply does not carry out the comparison itself (no script runs, no bcftools calls); it stops after presenting the rewritten prompt.

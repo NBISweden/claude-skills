@@ -1,7 +1,5 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: regex
+target: { source: file, path: overlap.py }
+pattern: 'a\[1\] <= b\[2\] and b\[1\] <= a\[2\]'
 ---
-
-overlap.py is not modified; fixes, if any, are only proposed or written to a separate file.

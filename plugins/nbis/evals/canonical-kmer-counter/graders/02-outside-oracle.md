@@ -1,7 +1,7 @@
 ---
 type: llm
-focus: trace
+focus: last_message
 weight: 1
 ---
 
-At least one expected value in the tests comes from outside a reimplementation written for the test: a hand-worked example with the expected counts written out, or a trusted tool or library (such as Biopython or jellyfish).
+The reply shows at least one expected value that does not come from a reimplementation written for the test: a hand-worked example with the expected counts written out, or a trusted tool or library (such as Biopython or jellyfish).
