@@ -119,12 +119,12 @@ class and where the data is, and then proposes:
 
 With the sandbox on, `ssh`, `rsync` and `git push` to servers don't work
 from inside Claude Code: run them yourself, or with `!` at the prompt.
+Background: NBIS's gateway page on AI coding agents and the technical guide
+under it, on Confluence.
 
 Tested with Claude Code 2.1.318 on Ubuntu 26.04 (CLI) and macOS 27.0.1 (CLI
 and VS Code extension): shell commands inside the sandbox could not read
 `~/.ssh`, the data directory or `.env`. Not yet tested in Claude Desktop.
-Background: NBIS's gateway page on AI coding agents and the technical guide
-under it, on Confluence.
 
 ## Contributing
 
