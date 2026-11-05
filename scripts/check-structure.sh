@@ -12,7 +12,7 @@ for src in $(jq -r '.plugins[].source' .claude-plugin/marketplace.json); do
   name=$(jq -r '.name' "$dir/.claude-plugin/plugin.json" 2>/dev/null) || { err "$dir: no readable plugin.json"; continue; }
   listed=$(jq -r --arg s "$src" '.plugins[] | select(.source == $s) | .name' .claude-plugin/marketplace.json)
   [ "$name" = "$listed" ] || err "$dir: plugin.json name '$name' differs from marketplace name '$listed'"
-  grep -Eq "^/$dir/[[:space:]]+@" CODEOWNERS || err "$dir: no owner line '/$dir/ @someone' in CODEOWNERS"
+  grep -Eq "^/$dir/[[:space:]]+@" CODEOWNERS || err "$dir: no owner in CODEOWNERS; add the line '/$dir/ @your-github-name'"
   ls "$dir"/evals/*/prompt.md >/dev/null 2>&1 || err "$dir: no eval case (evals/<case>/prompt.md)"
   for s in "$dir"/skills/*/SKILL.md; do
     [ -e "$s" ] || continue
