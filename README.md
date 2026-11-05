@@ -24,6 +24,15 @@ In Claude Code:
 /plugin install nbis-safety@nbisweden
 ```
 
+In Claude Desktop (Code tab) and the VS Code extension, the same commands
+open a plugins window instead: add `NBISweden/claude-skills` under
+**Marketplaces**, then install `nbis` and `nbis-safety` under **Plugins**,
+for you (user scope).
+
+The terminal, Claude Desktop and the VS Code extension on one computer read
+the same settings, so a plugin installed for you in one of them is there in
+the others too.
+
 Run `/plugin marketplace update nbisweden` to fetch new versions, then
 `/reload-plugins` or start a new session to use them.
 
