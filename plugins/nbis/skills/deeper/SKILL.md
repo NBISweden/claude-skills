@@ -23,6 +23,8 @@ specific to this task, never generic:
 
 Question 4 matters most: name the check concretely (which test, which data,
 what result counts as a pass), and say whether it can be run today. When the
+check compares against another tool, name the inputs both sides must share,
+such as the same reference FASTA and its version. When the
 task is about whether code or an algorithm is correct, the `verify` skill in
 this plugin lists the methods.
 
