@@ -1,7 +1,8 @@
 # Owners review changes to what they own. Add yourself when you contribute.
+# Every path needs two owners: an author cannot approve their own pull request.
 # Later lines win, so keep the most specific paths last.
 
-*                                   @jhagberg
-/plugins/nbis/                      @jhagberg
-/plugins/nbis-safety/               @jhagberg
-/.github/                           @jhagberg
+*                                   @jhagberg @viklund
+/plugins/nbis/                      @jhagberg @viklund
+/plugins/nbis-safety/               @jhagberg @viklund
+/.github/                           @jhagberg @viklund
