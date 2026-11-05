@@ -82,6 +82,8 @@ wrong answer is costly or the bug would be rare and silent.
 - Each claim, where it comes from, the method used and the result.
 - The commands run, their inputs and their actual output, so anyone can
   repeat them.
+  If the tests could not be saved to a file, put the exact commands or
+  script in the reply.
 - How much was checked: generated cases, datasets, model bounds, or what the
   proof covers. A pass supports only that claim on that domain.
 - Confirmed bugs, each with its failing test and the smallest input.
