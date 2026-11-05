@@ -1,7 +1,5 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: regex
+target: last_message
+pattern: '```[^\n]*\n[\s\S]{200,}?\n```'
 ---
-
-The rewritten prompt is in its own fenced code block.

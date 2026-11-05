@@ -1,7 +1,5 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: regex
+target: { source: file, path: kmers.py }
+pattern: 'if base not in ENC:\n\s+continue\n'
 ---
-
-kmers.py is not modified; fixes, if any, are only proposed or written to a separate file.
