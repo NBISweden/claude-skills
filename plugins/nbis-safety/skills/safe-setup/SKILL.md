@@ -200,8 +200,9 @@ Start from this, then adjust as listed:
   sandbox is on. Also offer `"env": {"CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"}`
   there: it removes variables that look like keys or passwords from
   commands, hooks and MCP servers (not `GH_TOKEN` or `GITHUB_TOKEN`, nor
-  names that don't look secret), so an MCP server that reads its key from
-  the environment stops working. Turning the sandbox on in user settings
+  names that don't look secret). A command or MCP server that inherits its
+  key from the user's shell stops getting it; a key set under `env` in the
+  MCP server's own config still reaches it. Turning the sandbox on in user settings
   too would cover shell commands everywhere, but `ssh`, `rsync` and
   `git push` then stop working in every project: mention it, and write it
   only if the user asks.
