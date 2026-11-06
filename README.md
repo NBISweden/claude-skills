@@ -126,6 +126,11 @@ class and where the data is, and then proposes:
   Copilot, Codex, Cursor and Gemini read too. They guide the agent but are
   not a boundary.
 
+Support work gets the stricter version: you approve every command, Claude's
+memory is off, and the agent adds no dependencies or MCP servers. In
+development work sandboxed commands run without asking, but installing a
+package still asks.
+
 With the sandbox on, `ssh`, `rsync` and `git push` to servers don't work
 from inside Claude Code: run them yourself, or with `!` at the prompt.
 Background: NBIS's gateway page on AI coding agents and the technical guide
