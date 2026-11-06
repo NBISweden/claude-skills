@@ -15,6 +15,8 @@ echo 'API_KEY=canary-secret-value' > "$proj/.env"
 echo 'TOKEN=canary-nested-value' > "$proj/services/api/.env"
 printf '@r1\nCANARYREAD\n+\nIIIIIIIIII\n' > "$proj/data/s1.fastq"
 echo 'print(1)' > "$proj/src/a.py"
+mkdir -p "$home/.claude"
+echo '{"permissions":{"deny":["Read(/**/.env)","Read(//**/*.pem)","Read(**/.env)","Read(~/.ssh/**)"]}}' > "$home/.claude/settings.json"
 echo '{"sandbox":{"enabled":false,"autoAllowBashIfSandboxed":true,"excludedCommands":["python3 *"]}}' > "$proj/.claude/settings.local.json"
 printf '#!/bin/sh\n' > "$venv/bin/python3"
 printf '#!/bin/sh\n' > "$home/.local/bin/snakemake"
@@ -46,6 +48,12 @@ refuse_line '~/work'
 expect 'settings.local.json: sandbox.enabled is false'
 expect 'settings.local.json: sandbox.excludedCommands: python3 *'
 expect 'settings.local.json: sandbox.autoAllowBashIfSandboxed is true'
+
+# user-level deny rules that cover nothing are reported, working ones are not
+expect 'permissions.deny Read(/**/.env) anchors at ~/.claude here'
+expect 'permissions.deny Read(//**/*.pem) is not enforced for shell commands on Linux'
+refuse 'Read(**/.env) anchors'
+refuse 'Read(~/.ssh/**) anchors'
 
 [ "$fail" = 0 ] && echo "test-check: ok"
 exit "$fail"

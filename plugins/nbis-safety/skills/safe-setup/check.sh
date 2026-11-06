@@ -96,7 +96,9 @@ if command -v jq >/dev/null; then
         ($s.filesystem.allowWrite[]? | "sandbox.filesystem.allowWrite: \(.)"),
         ($s.network.allowedDomains[]? | "sandbox.network.allowedDomains: \(.)"),
         ($s.network.strictAllowlist == true | select(.) | "sandbox.network.strictAllowlist is true"),
-        (.permissions.defaultMode // empty | select(. == "bypassPermissions") | "permissions.defaultMode is \(.)")
+        (.permissions.defaultMode // empty | select(. == "bypassPermissions") | "permissions.defaultMode is \(.)"),
+        (.permissions.deny[]? | select(test("^[A-Za-z]+\\(//\\*\\*")) | "permissions.deny \(.) is not enforced for shell commands on Linux"),
+        (select($f | startswith("/")) | .permissions.deny[]? | select(test("^[A-Za-z]+\\(/[^/]")) | "permissions.deny \(.) anchors at ~/.claude here, so it covers no project")
       ] | .[] | "\($f): \(.)"' "$f" 2>/dev/null || say "$f: not valid JSON"
   done
   say "(done)"
