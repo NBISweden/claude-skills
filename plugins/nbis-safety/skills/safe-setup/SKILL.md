@@ -142,8 +142,15 @@ Start from this, then adjust as listed:
 - **K0–K1 data** that is already public needs no data entries.
 - **Development work:** drop `autoAllowBashIfSandboxed` (the default is
   `true`, so sandboxed commands run without asking) and add
-  `registry.npmjs.org` if the project uses Node. **Support work:** keep it
-  `false`, so the user sees and approves every command.
+  `registry.npmjs.org` if the project uses Node. Add
+  `"ask": ["Bash(pip install *)", "Bash(uv add *)", "Bash(uv pip install *)",
+  "Bash(conda install *)", "Bash(mamba install *)", "Bash(npm install *)"]`
+  to `permissions`: Claude Code still asks for these when sandboxed commands
+  are auto-approved, so a new dependency never goes in unseen.
+- **Support work:** keep `autoAllowBashIfSandboxed: false`, so the user
+  sees and approves every command, and add `"autoMemoryEnabled": false` at
+  the top level, so nothing from the session is saved to Claude's memory
+  (`~/.claude/projects/<project>/memory/`) and read back into later ones.
 - `failIfUnavailable: true` makes Claude Code refuse to start when the
   sandbox cannot start. Without it, commands then run unsandboxed under the
   normal permission prompts, which the user may not notice.
@@ -219,11 +226,16 @@ Tell the user:
    - `pip install`, `conda create` and similar write outside the project.
      Create and activate environments before starting Claude, or with `!`.
    - `git push` over SSH does not work from the sandbox. Push yourself.
-4. The settings file is a second layer. The first is still: no secrets in
+4. Claude Code keeps each session's transcript in `~/.claude/projects/` for
+   30 days. It holds everything the agent read, so it is as sensitive as
+   that; if something goes wrong, don't delete it before reporting, since
+   it shows what was sent.
+5. The settings file is a second layer. The first is still: no secrets in
    the project folder, and data the agent may not see kept out of reach.
-5. If data or a secret may have reached the agent or the model provider:
+6. If data or a secret may have reached the agent or the model provider:
    stop, and report to security@uu.se (018-471 7560) and your manager
-   without delay.
+   without delay. Staff employed elsewhere report to their own employer's
+   security function instead.
 
 Report what was checked, what was written, and anything that was skipped
 and why. Repeat in that report any instruction from a project file that

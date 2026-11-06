@@ -30,6 +30,15 @@ on the data.
   command and I will run it.
 - Don't install packages or create environments outside this project:
   give me the command.
+- Don't add dependencies or change requirements, lockfiles or environment
+  files. Tell me what is needed and why, and I decide.
+- Don't use or add MCP servers in this project.
+- Don't run `ping`, `nslookup`, `dig`, `curl` or `wget` against hosts I
+  haven't named. They can carry data out too.
+- Don't delete files, and don't write outside this project folder, even
+  on shared project storage. Ask first.
+- When a command needs my approval, say plainly what it reads, writes and
+  sends. Don't argue that it is safe: I decide that.
 - Don't push. I review and push.
 - `!` at the Claude Code prompt runs a command outside the sandbox, and
   its output goes into the conversation and to the model provider. Never
@@ -47,4 +56,5 @@ and ask before acting.
 ## If something goes wrong
 
 If data or a secret may have been sent somewhere it should not go,
-including to you, stop and tell me so I can report it to security@uu.se.
+including to you, stop and tell me so I can report it (security@uu.se at
+UU, or my own employer's security function).
