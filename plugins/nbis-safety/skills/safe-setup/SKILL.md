@@ -33,7 +33,8 @@ anywhere else:
 | `<project>/CLAUDE.md` | The line `@AGENTS.md`, appended if the file exists |
 
 Never write `~/.claude/CLAUDE.md`, `~/.claude/settings.json` (except the
-separate, approved `strictAllowlist` line in step 3), `.claude/settings.local.json`,
+separate, approved `strictAllowlist` line and whole-computer baseline in
+step 3), `.claude/settings.local.json`,
 or a file in a parent directory. Name the full paths when you show the files.
 
 ## 1. Check, without changing anything
@@ -60,7 +61,8 @@ off, `allowUnsandboxedCommands: true`, the weaker-isolation flags, every
 `allowRead`/`allowWrite` entries that open home or a data directory, broad
 `allowedDomains`, `permissions.defaultMode` set to `bypassPermissions`, and
 for support work `autoAllowBashIfSandboxed: true` (the `/sandbox` panel
-writes that to `settings.local.json`).
+writes that to `settings.local.json`). It also lists deny rules that cover
+nothing (see "Whole computer" in step 3); propose rewriting them.
 Do not call the setup safe while one of them remains; say which one and
 what it allows.
 
@@ -164,6 +166,28 @@ Start from this, then adjust as listed:
   user's `~/.claude/settings.json` (or managed settings), not the project.
   Offer to add it there, unless `check.sh` shows it is set; it applies to
   all the user's projects, so write it only on a separate yes.
+- **Whole computer (offer, separate yes):** a folder where nobody ran this
+  skill has no protection. Offer to merge these into the `permissions.deny`
+  list in `~/.claude/settings.json`, keeping the user's own entries:
+
+  ```json
+  ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)", "Read(~/.netrc)",
+   "Read(**/.env)", "Read(**/.env.*)", "Read(**/*.pem)", "Read(**/*.key)",
+   "Read(**/*.p12)", "Read(**/id_rsa*)", "Read(**/id_ed25519*)"]
+  ```
+
+  In that file `/x` means `~/.claude/x`, so the project form `Read(/**/.env)`
+  covers nothing, and `Read(//**/.env)` covers nothing for shell commands on
+  Linux. Use `**/x` (any depth under the folder Claude starts in) and `~/x`.
+  Say what it does: in any folder Claude is started in, its own file tools
+  are refused these files, but shell commands such as `cat` are only
+  stopped where the sandbox is on. Do not offer
+  `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` for everyday use: it forces every
+  command to ask for approval, and `gh` loses its keyring login.
+  Turning the sandbox on in user settings
+  too would cover shell commands everywhere, but `ssh`, `rsync` and
+  `git push` then stop working in every project: mention it, and write it
+  only if the user asks.
 
 Path syntax differs: in `sandbox.filesystem`, `./x` is the project root and
 `/x` is absolute; in `permissions` rules, `/x` is the project root, `//x` is
