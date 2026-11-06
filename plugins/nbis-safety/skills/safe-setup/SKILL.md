@@ -180,13 +180,11 @@ Start from this, then adjust as listed:
   covers nothing, and `Read(//**/.env)` covers nothing for shell commands on
   Linux. Use `**/x` (any depth under the folder Claude starts in) and `~/x`.
   Say what it does: in any folder Claude is started in, its own file tools
-  are refused these files, but shell commands such as `cat` are only stopped where the
-  sandbox is on. Also offer `"env": {"CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"}`
-  there: it removes variables that look like keys or passwords from
-  commands, hooks and MCP servers (not `GH_TOKEN` or `GITHUB_TOKEN`, nor
-  names that don't look secret). A command or MCP server that inherits its
-  key from the user's shell stops getting it; a key set under `env` in the
-  MCP server's own config still reaches it. Turning the sandbox on in user settings
+  are refused these files, but shell commands such as `cat` are only
+  stopped where the sandbox is on. Do not offer
+  `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` for everyday use: it forces every
+  command to ask for approval, and `gh` loses its keyring login.
+  Turning the sandbox on in user settings
   too would cover shell commands everywhere, but `ssh`, `rsync` and
   `git push` then stop working in every project: mention it, and write it
   only if the user asks.
