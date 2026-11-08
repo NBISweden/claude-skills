@@ -38,6 +38,9 @@
 - Don't delete files outside the repository, or data on shared storage.
 - When a command needs my approval, say plainly what it reads, writes and
   sends. Don't argue that it is safe: I decide that.
+- If a command or a file read is refused (a deny rule, the sandbox, a hook
+  or my "no"), don't reach the same thing another way: no other tool,
+  command, copy or script. Tell me what you needed and why.
 - `!` at the Claude Code prompt runs a command outside the sandbox, and
   its output goes into the conversation and to the model provider. Never
   suggest `!` for looking at data or secrets: I use a separate terminal
