@@ -39,6 +39,9 @@ on the data.
   on shared project storage. Ask first.
 - When a command needs my approval, say plainly what it reads, writes and
   sends. Don't argue that it is safe: I decide that.
+- If a command or a file read is refused (a deny rule, the sandbox, a hook
+  or my "no"), don't reach the same thing another way: no other tool,
+  command, copy or script. Tell me what you needed and why.
 - Don't push. I review and push.
 - `!` at the Claude Code prompt runs a command outside the sandbox, and
   its output goes into the conversation and to the model provider. Never
