@@ -96,7 +96,7 @@ if command -v jq >/dev/null; then
         ($s.filesystem.allowWrite[]? | "sandbox.filesystem.allowWrite: \(.)"),
         ($s.network.allowedDomains[]? | "sandbox.network.allowedDomains: \(.)"),
         ($s.network.strictAllowlist == true | select(.) | "sandbox.network.strictAllowlist is true"),
-        (.permissions.defaultMode // empty | select(. == "bypassPermissions" or . == "auto") | "permissions.defaultMode is \(.)")
+        (.permissions.defaultMode // empty | select(. == "bypassPermissions") | "permissions.defaultMode is \(.)")
       ] | .[] | "\($f): \(.)"' "$f" 2>/dev/null || say "$f: not valid JSON"
   done
   say "(done)"

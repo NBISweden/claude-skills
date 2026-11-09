@@ -140,17 +140,31 @@ Start from this, then adjust as listed:
   `Read(//<path>/**)` and `Edit(//<path>/**)` to `permissions.deny`. Paths
   outside home are readable by default.
 - **K0–K1 data** that is already public needs no data entries.
-- **Development work:** drop `autoAllowBashIfSandboxed` (the default is
-  `true`, so sandboxed commands run without asking) and add
-  `registry.npmjs.org` if the project uses Node. Add
+- **Both kinds of work:** add
   `"ask": ["Bash(pip install *)", "Bash(uv add *)", "Bash(uv pip install *)",
   "Bash(conda install *)", "Bash(mamba install *)", "Bash(npm install *)"]`
-  to `permissions`: Claude Code still asks for these when sandboxed commands
-  are auto-approved, so a new dependency never goes in unseen.
-- **Support work:** keep `autoAllowBashIfSandboxed: false`, so the user
-  sees and approves every command, and add `"autoMemoryEnabled": false` at
-  the top level, so nothing from the session is saved to Claude's memory
+  to `permissions`: Claude Code asks for these in every mode, even when the
+  sandbox or auto mode would approve the command, so a new dependency never
+  goes in unseen.
+- **Development work:** drop `autoAllowBashIfSandboxed` (the default is
+  `true`, so sandboxed commands run without asking) and add
+  `registry.npmjs.org` if the project uses Node.
+- **Support work:** keep `autoAllowBashIfSandboxed: false`, so no command
+  runs unchecked: in auto mode the classifier reviews each one, in manual
+  mode the user approves each one. Add `"Bash(git push *)"` to the `ask`
+  list, and `"autoMemoryEnabled": false` at the top level, so nothing from
+  the session is saved to Claude's memory
   (`~/.claude/projects/<project>/memory/`) and read back into later ones.
+- **Permission mode:** in the terminal and VS Code, Claude Code starts in
+  auto mode (v2.1.283 and later). A classifier checks each command before
+  it runs and blocks what goes beyond the request, such as sending data
+  out, running downloaded code or deleting files that were there before.
+  It catches what a hurried user would approve without reading, so
+  recommend it for support work too. Do not set `permissions.defaultMode`
+  in the project: `auto` has no effect there. Tell the user that Shift+Tab
+  cycles to manual mode, where every command asks, if they want to watch
+  what the agent does at first. The classifier is a second check, not a
+  boundary: the sandbox, the deny rules and `strictAllowlist` are what hold.
 - `failIfUnavailable: true` makes Claude Code refuse to start when the
   sandbox cannot start. Without it, commands then run unsandboxed under the
   normal permission prompts, which the user may not notice.
@@ -158,12 +172,14 @@ Start from this, then adjust as listed:
   domains: the proxy checks only the host name, so a broad entry is a way
   out for data.
 - The list is not a hard boundary on its own. A host outside it gets a
-  prompt in manual and `acceptEdits` mode, and connects without one in
-  `bypassPermissions` mode. Only `sandbox.network.strictAllowlist: true`
-  refuses it in every mode, and Claude Code reads that key only from the
-  user's `~/.claude/settings.json` (or managed settings), not the project.
-  Offer to add it there, unless `check.sh` shows it is set; it applies to
-  all the user's projects, so write it only on a separate yes.
+  prompt in manual and `acceptEdits` mode; in auto mode the classifier can
+  open it for a single command without asking, and in `bypassPermissions`
+  mode it connects. Only `sandbox.network.strictAllowlist: true` refuses it
+  in every mode, and Claude Code reads that key only from the user's
+  `~/.claude/settings.json` (or managed settings), not the project. Offer
+  to add it there, unless `check.sh` shows it is set; it applies to all the
+  user's projects, so write it only on a separate yes. For support work,
+  do not call the setup safe without it.
 
 Path syntax differs: in `sandbox.filesystem`, `./x` is the project root and
 `/x` is absolute; in `permissions` rules, `/x` is the project root, `//x` is
