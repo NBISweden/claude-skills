@@ -1,5 +1,5 @@
 ---
 type: regex
-target: { source: file, path: .claude/settings.json }
-pattern: 'Bash\(git push \*\)'
+target: trace
+pattern: 'Bash\([^)]*\)\\?"\s*,(?:\s|\\n)*\\?"Bash\(git push \*\)|Bash\(git push \*\)\\?"\s*,(?:\s|\\n)*\\?"Bash\('
 ---
