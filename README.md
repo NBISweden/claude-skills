@@ -120,8 +120,9 @@ class and where the data is, and then proposes:
   cannot read your home directory (apart from your toolchain) or the data
   directories; Claude's own file tools are denied the data and secrets; the
   network is limited to package registries, and any other host needs your
-  approval. For a hard block, the skill offers `strictAllowlist` in your
-  `~/.claude/settings.json`, the only place Claude Code reads it.
+  approval, or in auto mode the classifier's. For a hard block, the skill
+  offers `strictAllowlist` in your `~/.claude/settings.json`, the only place
+  Claude Code reads it; support work needs it.
 - `AGENTS.md` plus `@AGENTS.md` in `CLAUDE.md`: **instructions** that
   Copilot, Codex, Cursor and Gemini read too. They guide the agent but are
   not a boundary.
@@ -132,10 +133,17 @@ hold data, which hosts the agent needs and whether it is support work
 differ between projects, and settings in `~/.claude/settings.json` apply to
 all of them. Run it once in each project you use an agent in.
 
-Support work gets the stricter version: you approve every command, Claude's
-memory is off, and the agent adds no dependencies or MCP servers. In
-development work sandboxed commands run without asking, but installing a
-package still asks.
+Claude Code starts in auto mode: a classifier checks each command before it
+runs and stops what you might approve without reading, such as data sent
+out or files deleted. It is a second check, not a boundary; the sandbox and
+the deny rules are what hold. Installing a package always asks you.
+
+Support work gets the stricter version: every command goes through the
+classifier (or asks you, in manual mode), a push asks you, Claude's memory
+is off, and the agent adds no dependencies or MCP servers. In development
+work sandboxed commands run without asking. To approve every command
+yourself while you learn what the agent does, press Shift+Tab for manual
+mode.
 
 With the sandbox on, `ssh`, `rsync` and `git push` to servers don't work
 from inside Claude Code: run them yourself, or with `!` at the prompt.
