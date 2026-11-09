@@ -109,6 +109,8 @@ jobs:
             exit 1
           fi
           mkdir -p eval-reports
+          # The runner is a VM, not a container: let check-container.sh see a fake /.dockerenv.
+          CHECK_ROOT=$(mktemp -d) && touch "$CHECK_ROOT/.dockerenv" && export CHECK_ROOT
           fail=0
           for p in $PLUGINS; do   # unquoted on purpose: a space-separated list of slugs
             t=0.8; [ "$p" = nbis-safety ] && t=1   # a safety check that fails is a failed run

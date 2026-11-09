@@ -1,7 +1,7 @@
 {
   "name": "nbis-safety",
-  "version": "0.1.0",
-  "description": "Safe use of AI coding agents at NBIS: /nbis-safety:safe-setup checks a project and sets up Claude Code with the sandbox, read limits on home and data, deny rules for secrets, and an AGENTS.md.",
+  "version": "0.1.1",
+  "description": "Safe use of AI coding agents at NBIS: /nbis-safety:safe-setup checks a project and sets up Claude Code with the sandbox, read limits on home and data, deny rules for secrets, and an AGENTS.md; /nbis-safety:container-setup does the same for Claude running inside a Docker container, where the container is the boundary, and reviews that boundary.",
   "author": { "name": "NBIS", "url": "https://nbis.se" },
   "repository": "https://github.com/NBISweden/claude-skills",
   "license": "MIT"

@@ -6,13 +6,14 @@ installed on its own, so you only get what you choose.
 | Plugin | Contents |
 | --- | --- |
 | `nbis` | General skills: `deeper` and `verify` |
-| `nbis-safety` | Safe use of AI coding agents: `safe-setup` |
+| `nbis-safety` | Safe use of AI coding agents: `safe-setup` and `container-setup` |
 
 | Skill | What it does |
 | --- | --- |
 | `/nbis:deeper` | Turns a task into a deeper version of itself, not a bigger one: what a top professional would do, the raw material they would start from, their methods and tools, and what would show the result is right. Then rewrites your prompt. Runs only when you call it. |
 | `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
 | `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for support or development work. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
+| `/nbis-safety:container-setup` | The same checks and questions for Claude Code running inside a Docker or Podman container, where the container is the boundary: deny rules for secrets and data and an `AGENTS.md`, but no sandbox settings. Reviews the container's capabilities, mounts, network and environment, and suggests `docker run` flags. Stops for K3 data. Runs only when you call it. |
 
 ## Install
 
@@ -121,6 +122,16 @@ With the sandbox on, `ssh`, `rsync` and `git push` to servers don't work
 from inside Claude Code: run them yourself, or with `!` at the prompt.
 Background: NBIS's gateway page on AI coding agents and the technical guide
 under it, on Confluence.
+
+If you run Claude Code inside a container, use `/nbis-safety:container-setup`
+instead. The sandbox cannot start in Docker, and a project that requires it
+makes Claude Code exit silently there. The skill writes only deny rules and
+`AGENTS.md`, checks the container (`check-container.sh`: capabilities,
+`no-new-privileges`, mounts, Docker socket, outbound network, secret-like
+environment variable names, sandbox settings that would stop Claude from
+starting) and tells you which `docker run` flags close the gaps. The deny
+rules do not cover shell commands, so keep data the agent may not see out of
+the container.
 
 ## Contributing
 
