@@ -128,7 +128,8 @@ class and where the data is, and then proposes:
   not a boundary.
 
 It sets up one project folder at a time. For the whole computer it only
-offers, each on a separate yes, `strictAllowlist` and a baseline that keeps
+offers, each on a separate yes, `strictAllowlist` with `classifyAllShell`,
+and a baseline that keeps
 Claude's file tools away from keys and `.env` files in every folder (shell
 commands only where the sandbox is on). Which directories
 hold data, which hosts the agent needs and whether it is support work
@@ -144,8 +145,10 @@ run with `Rscript -e` or `R -e`) ask you; an install written another way
 may not.
 
 Support work gets the stricter version: every command goes through the
-classifier (or asks you, in manual mode), a push asks you, Claude's memory
-is off, and the agent adds no dependencies or MCP servers. In development
+classifier (with `classifyAllShell`, which the skill offers; without it, a
+command that matches one of your own allow rules skips the classifier, as
+tested with Claude Code 2.1.322 on Ubuntu 26.04) or asks you, in manual
+mode; a push asks you, Claude's memory is off, and the agent adds no dependencies or MCP servers. In development
 work sandboxed commands run without asking. To approve every command
 yourself while you learn what the agent does, press Shift+Tab for manual
 mode.

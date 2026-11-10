@@ -48,6 +48,8 @@ refuse_line '~/work'
 expect 'settings.local.json: sandbox.enabled is false'
 expect 'settings.local.json: sandbox.excludedCommands: python3 *'
 expect 'settings.local.json: sandbox.autoAllowBashIfSandboxed is true'
+# the fixture's user settings lack classifyAllShell
+expect 'NOTE: autoMode.classifyAllShell is not set'
 
 # user-level deny rules that cover nothing are reported, working ones are not
 expect 'permissions.deny Read(/**/.env) anchors at ~/.claude here'

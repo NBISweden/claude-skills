@@ -34,8 +34,8 @@ anywhere else:
 | `<project>/.gitignore` | One line, on a yes: `.claude/settings.json` (step 5) |
 
 Never write `~/.claude/CLAUDE.md`, `~/.claude/settings.json` (except the
-separate, approved `strictAllowlist` line and whole-computer baseline in
-step 3), `.claude/settings.local.json`,
+separate, approved `strictAllowlist` and `classifyAllShell` lines and
+whole-computer baseline in step 3), `.claude/settings.local.json`,
 or a file in a parent directory. Name the full paths when you show the files.
 
 ## 1. Check, without changing anything
@@ -165,14 +165,17 @@ Start from this, then adjust as listed:
   `true`, so sandboxed commands run without asking) and add
   `registry.npmjs.org` if the project uses Node.
 - **Support work:** keep `autoAllowBashIfSandboxed: false`, so no command
-  runs unchecked: in auto mode the classifier reviews each one, in manual
-  mode the user approves each one. Add `"Bash(git push *)"` to the `ask`
+  runs unchecked: in auto mode the classifier reviews each one (with
+  `classifyAllShell`, below; without it, a command matching one of the
+  user's own allow rules skips the classifier), in manual mode the user
+  approves each one. Add `"Bash(git push *)"` to the `ask`
   list, and `"autoMemoryEnabled": false` at the top level, so nothing from
   the session is saved to Claude's memory
   (`~/.claude/projects/<project>/memory/`) and read back into later ones.
 - **Permission mode:** in the terminal and VS Code, Claude Code starts in
   auto mode (v2.1.283 and later). A classifier checks each command before
-  it runs and blocks what goes beyond the request, such as sending data
+  it runs (with `classifyAllShell`, below; without it, only those no allow
+  rule approves) and blocks what goes beyond the request, such as sending data
   out, running downloaded code or deleting files that were there before.
   It catches what a hurried user would approve without reading, so
   recommend it for support work too. Do not set `permissions.defaultMode`
@@ -192,9 +195,13 @@ Start from this, then adjust as listed:
   mode it connects. Only `sandbox.network.strictAllowlist: true` refuses it
   in every mode, and Claude Code reads that key only from the user's
   `~/.claude/settings.json` (or managed settings), not the project. Offer
-  to add it there, unless `check.sh` shows it is set; it applies to all the
-  user's projects, so write it only on a separate yes. If the user says
-  no, say plainly that the network list is then not a hard limit.
+  to add it there, unless `check.sh` shows it is set, and on the same yes
+  `"autoMode": {"classifyAllShell": true}` (unless `check.sh` shows it is
+  set), with the reason: "without it, a command matching one of your own
+  allow rules skips the classifier". Both apply to all the user's
+  projects, so write them only on a separate yes. If the user says no,
+  say plainly that the network list is then not a hard limit. For support
+  work, do not call the setup safe without `classifyAllShell`.
 - **Whole computer (offer, separate yes):** a folder where nobody ran this
   skill has no protection. Offer to merge these into the `permissions.deny`
   list in `~/.claude/settings.json`, keeping the user's own entries:
