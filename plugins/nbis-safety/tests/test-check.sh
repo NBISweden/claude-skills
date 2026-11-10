@@ -71,7 +71,7 @@ EOF
 chmod +x "$fakebin/curl"
 ln -s "$(command -v jq)" "$nocurl/jq"
 echo 'not a real key' > "$home/.ssh/id_canary"
-verify() { HOME=$home PATH="$fakebin:$PATH" bash "$check" --verify "$proj" 2>&1; }
+verify() { CURL_MODE=${1:-${CURL_MODE:-}} HOME=$home PATH="$fakebin:$PATH" bash "$check" --verify "$proj" 2>&1; }   # $1: curl stub mode
 support='{"sandbox":{"enabled":true,"failIfUnavailable":true,"autoAllowBashIfSandboxed":false,"allowUnsandboxedCommands":false,
   "filesystem":{"denyRead":["~/","./data","./.nbis-safety/blocked"],"allowRead":["."],"denyWrite":["./data"]},
   "network":{"allowedDomains":["pypi.org"]}},
@@ -88,38 +88,38 @@ exit_is() { [ "$code" = "$1" ] || { echo "FAIL: exit $code, expected $1"; fail=1
 
 # 1. readable canary: a run outside the sandbox says so first and never says blocked
 setup "$support" "$strict"
-out=$(CURL_MODE=open verify); code=$?
+out=$(verify open); code=$?
 expect 'tested: NOT BLOCKED  reading a blocked project folder'
 exit_is 1
 [[ $out == note:* ]] || { echo "FAIL: the first line is not a note"; fail=1; }
 refuse 'tested: blocked'
-out=$(CURL_MODE=split verify)
+out=$(verify split)
 refuse 'tested: blocked'
 expect 'not tested: network'
 # test folder gone altogether (a fresh clone, or it was deleted): not tested, never "blocked"
 mv "$proj/.nbis-safety/blocked" "$proj/.nbis-safety/blocked.away"
-out=$(CURL_MODE=split verify)
+out=$(verify split)
 refuse 'tested: blocked  reading a blocked project folder'
 expect 'not tested: reading a blocked project folder (the test file is missing'
 mv "$proj/.nbis-safety/blocked.away" "$proj/.nbis-safety/blocked"
 # 2, 5, 9, 11. canary hidden, as in a masked folder; support settings and strictAllowlist
 rm "$proj/.nbis-safety/blocked/canary"
 # an empty folder that nothing visibly hides is not evidence of a block
-out=$(CURL_MODE=split verify)
+out=$(verify split)
 refuse 'tested: blocked  reading a blocked project folder'
 expect 'not tested: reading a blocked project folder (the test file is missing or empty'
 # excluded commands and an empty settings file must not leave the lines green
 echo '{"sandbox":{"excludedCommands":["python3 *"]}}' > "$proj/.claude/settings.local.json"
-out=$(CURL_MODE=split verify)
+out=$(verify split)
 expect 'configured: NO  no command is excluded from the sandbox'
 : > "$home/.claude/settings.json.keep"; cp "$home/.claude/settings.json" "$home/.claude/settings.json.keep"
 printf ' \n' > "$home/.claude/settings.json"; rm "$proj/.claude/settings.local.json"
-out=$(CURL_MODE=split verify)
+out=$(verify split)
 expect 'configured: unknown  network list is a hard limit'
 mv "$home/.claude/settings.json.keep" "$home/.claude/settings.json"
 # a folder that refuses entry, as the macOS sandbox does it
 chmod 000 "$proj/.nbis-safety/blocked"
-out=$(CURL_MODE=split verify); code=$?
+out=$(verify split); code=$?
 chmod 755 "$proj/.nbis-safety/blocked"
 [ "$(id -u)" = 0 ] || expect 'tested: blocked  reading a blocked project folder'
 expect 'tested: blocked  a host outside the network list'
@@ -133,9 +133,9 @@ refuse './data'
 refuse 's1.fastq'
 refuse 'CANARYREAD'
 refuse 'id_canary'
-out=$(CURL_MODE=open verify)
+out=$(verify open)
 expect 'tested: NOT BLOCKED  a host outside the network list'
-out=$(CURL_MODE=offline verify)
+out=$(verify offline)
 expect 'not tested: network (offline'
 refuse 'tested: blocked  a host'
 # 10. no curl
