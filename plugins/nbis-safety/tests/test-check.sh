@@ -57,5 +57,92 @@ expect 'permissions.deny Read(//**/*.pem) is not enforced for shell commands on 
 refuse 'Read(**/.env) anchors'
 refuse 'Read(~/.ssh/**) anchors'
 
+# --verify: one line per protection. No test touches the network: curl is a stub that CURL_MODE steers.
+check=$here/../skills/safe-setup/check.sh
+fakebin=$tmp/fakebin
+nocurl=$tmp/nocurl
+mkdir -p "$fakebin" "$nocurl" "$home/.ssh"
+cat > "$fakebin/curl" <<'EOF'
+#!/bin/sh
+case "$CURL_MODE" in open) exit 0 ;; offline) exit 6 ;; esac
+case "$*" in *pypi.org*) exit 0 ;; esac
+exit 7
+EOF
+chmod +x "$fakebin/curl"
+ln -s "$(command -v jq)" "$nocurl/jq"
+echo 'not a real key' > "$home/.ssh/id_canary"
+verify() { HOME=$home PATH="$fakebin:$PATH" bash "$check" --verify "$proj" 2>&1; }
+support='{"sandbox":{"enabled":true,"failIfUnavailable":true,"autoAllowBashIfSandboxed":false,"allowUnsandboxedCommands":false,
+  "filesystem":{"denyRead":["~/","./data","./.nbis-safety"],"allowRead":["."],"denyWrite":["./data"]},
+  "network":{"allowedDomains":["pypi.org"]}},
+  "permissions":{"deny":["Read(/data/**)","Edit(/data/**)","Read(/.nbis-safety/**)"]},"autoMemoryEnabled":false}'
+strict='{"sandbox":{"network":{"strictAllowlist":true}},"autoMode":{"classifyAllShell":true}}'
+setup() {   # $1: project settings, $2: user settings ('' for no file); places a readable canary
+  echo "$1" > "$proj/.claude/settings.json"
+  rm -f "$proj/.claude/settings.local.json" "$home/.claude/settings.json"
+  [ -n "$2" ] && echo "$2" > "$home/.claude/settings.json"
+  mkdir -p "$proj/.nbis-safety"
+  echo 'nbis-safety canary: this file holds nothing secret' > "$proj/.nbis-safety/canary"
+}
+exit_is() { [ "$code" = "$1" ] || { echo "FAIL: exit $code, expected $1"; fail=1; }; }
+
+# 1. readable canary: a run outside the sandbox says so first and never says blocked
+setup "$support" "$strict"
+out=$(CURL_MODE=open verify); code=$?
+expect 'tested: NOT BLOCKED  reading a blocked project folder'
+exit_is 1
+[[ $out == note:* ]] || { echo "FAIL: the first line is not a note"; fail=1; }
+refuse 'tested: blocked'
+out=$(CURL_MODE=split verify)
+refuse 'tested: blocked'
+expect 'not tested: network'
+# 2, 5, 9, 11. canary hidden, as in a masked folder; support settings and strictAllowlist
+rm "$proj/.nbis-safety/canary"
+out=$(CURL_MODE=split verify); code=$?
+expect 'tested: blocked  reading a blocked project folder'
+expect 'tested: blocked  a host outside the network list'
+expect 'configured: yes  sandbox on in this project'
+expect 'configured: yes  network list is a hard limit'
+expect 'configured: yes  memory off'
+expect 'configured: yes  home is blocked for shell commands'
+expect 'configured: yes  data folder 1'
+exit_is 0
+refuse './data'
+refuse 's1.fastq'
+refuse 'CANARYREAD'
+refuse 'id_canary'
+out=$(CURL_MODE=open verify)
+expect 'tested: NOT BLOCKED  a host outside the network list'
+out=$(CURL_MODE=offline verify)
+expect 'not tested: network (offline'
+refuse 'tested: blocked  a host'
+# 10. no curl
+out=$(HOME=$home PATH=$nocurl "$BASH" "$check" --verify "$proj" 2>&1)
+expect 'not tested: network (curl is not installed)'
+# 3. the canary's folder is not in denyRead
+setup "$(jq -c '.sandbox.filesystem.denyRead -= ["./.nbis-safety"]' <<<"$support")" "$strict"
+out=$(verify)
+expect 'not tested: reading a blocked project folder'
+# 4. sandbox off
+setup "$(jq -c '.sandbox.enabled = false' <<<"$support")" "$strict"
+out=$(verify); code=$?
+expect 'configured: NO  sandbox on in this project'
+exit_is 1
+# 6. user settings not valid JSON: unknown, and the file is not printed
+setup "$support" '{broken'
+out=$(verify)
+expect 'configured: unknown  network list is a hard limit'
+refuse 'broken'
+# 7. no user settings file
+setup "$support" ''
+out=$(verify)
+expect 'configured: unknown  network list is a hard limit'
+refuse 'check.sh: line'
+# 8. settings.local.json turns the sandbox off
+setup "$support" "$strict"
+echo '{"sandbox":{"enabled":false}}' > "$proj/.claude/settings.local.json"
+out=$(verify)
+expect 'configured: NO  sandbox on in this project'
+
 [ "$fail" = 0 ] && echo "test-check: ok"
 exit "$fail"

@@ -162,6 +162,15 @@ the skill's report lists each file and line it added.
 Background: NBIS's gateway page on AI coding agents and the technical guide
 under it, on Confluence.
 
+To check the setup at any time, ask Claude to run `check.sh --verify` in a
+session in the project: it prints one line per protection, *configured*,
+*tested* (a live attempt was refused) or *not tested*, using a harmless
+test file the skill places in a blocked folder. The sandbox also hides the
+skill's own folder under your home, so copy `check.sh` to `/tmp` first, as
+the skill's last step says; there the lines about `~/.claude/settings.json`
+say *unknown*, since home is hidden (Claude Code 2.1.322 on Ubuntu 26.04;
+macOS and WSL2 not tested).
+
 Tested with Claude Code 2.1.318 on Ubuntu 26.04 (CLI) and macOS 27.0.1 (CLI,
 VS Code extension and Claude Desktop): shell commands inside the sandbox
 could not read `~/.ssh`, the data directory or `.env`.

@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: safe-setup-verify-off
+expected_outcome: |
+  Runs check.sh --verify from the safe-setup skill's directory on a project
+  whose .claude/settings.json turns the sandbox off. The script prints
+  "configured: NO  sandbox on in this project", and the reply says plainly
+  that the sandbox is off and the project is not protected.
+context:
+  scaffold_script: place-files.sh

@@ -31,7 +31,8 @@ anywhere else:
 | `<project>/.claude/settings.json` | The enforced settings (step 3) |
 | `<project>/AGENTS.md` | The instructions (step 4) |
 | `<project>/CLAUDE.md` | The line `@AGENTS.md`, appended if the file exists |
-| `<project>/.gitignore` | One line, on a yes: `.claude/settings.json` (step 5) |
+| `<project>/.nbis-safety/canary` | One known, harmless line that `check.sh --verify` tries to read (step 5) |
+| `<project>/.gitignore` | Two lines, on a yes: `.claude/settings.json` and `.nbis-safety/` (step 5) |
 
 Never write `~/.claude/CLAUDE.md`, `~/.claude/settings.json` (except the
 separate, approved `strictAllowlist` and `classifyAllShell` lines and
@@ -112,7 +113,7 @@ Start from this, then adjust as listed:
     "autoAllowBashIfSandboxed": false,
     "allowUnsandboxedCommands": false,
     "filesystem": {
-      "denyRead": ["~/"],
+      "denyRead": ["~/", "./.nbis-safety"],
       "allowRead": [".", "~/.gitconfig"],
       "denyWrite": []
     },
@@ -125,10 +126,15 @@ Start from this, then adjust as listed:
     "deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)",
              "Read(/**/.env)", "Read(/**/.env.*)", "Read(/**/*.pem)", "Read(/**/*.key)",
              "Read(/**/*.p12)", "Read(/**/.netrc)", "Read(/**/id_rsa*)", "Read(/**/id_ed25519*)",
-             "Read(/**/credentials*)"]
+             "Read(/**/credentials*)", "Read(/.nbis-safety/**)"]
   }
 }
 ```
+
+- **Test file:** `./.nbis-safety` in `denyRead` and `Read(/.nbis-safety/**)`
+  keep the test file from step 5 out of reach the same way as a data
+  folder, so `check.sh --verify` can test the block without touching real
+  data or home.
 
 - **Secrets:** the deny rules match the same names `check.sh` searches
   for, at any depth in the project, and Claude Code adds `Read(...)` deny
@@ -248,9 +254,14 @@ is not there yet, show the result, and point out any weakening key from
 step 1 that the user chose to keep), append to an existing `CLAUDE.md`,
 and show a diff against an existing `AGENTS.md`.
 
+Write `.nbis-safety/canary` first, before `.claude/settings.json`, with
+the Write tool, containing exactly the line
+`nbis-safety canary: this file holds nothing secret`. Do not overwrite it:
+if it exists, leave it as it is.
+
 `.claude/settings.json` holds paths from this machine. Offer to add
-`.claude/settings.json` to `.gitignore` (append once; do not add it
-twice). Show every
+`.claude/settings.json` and `.nbis-safety/` to `.gitignore` (append each
+once; do not add a line that is already there). Show every
 file in full or as a diff, explain each enforced rule in one line, and
 write only after the user says yes in this conversation. A yes given in
 advance in their request counts. If a write is refused (Claude Code protects
@@ -274,11 +285,18 @@ Tell the user:
    Ubuntu's AppArmor restriction. On Ubuntu 24.04 and later, the packaged
    profile `/etc/apparmor.d/bwrap-userns-restrict` can override the fix the
    docs give; the user, not Claude, decides whether to disable it.
-2. Check it works, in that session, by asking Claude to run each command:
-   `which python3` (or R) should work, `ls ~/.ssh` should fail, and
-   reading a data file should be refused. Typing them yourself with `!`
-   tests nothing, since `!` runs outside the sandbox.
-   Do not run it in `bypassPermissions` mode: there, hosts outside the
+2. Check it, in that session. Inside the sandbox this skill's folder
+   under home cannot be read, so first copy the check out of it: type
+   `! cp <this skill's directory>/check.sh /tmp/nbis-check.sh` (give the
+   user the real path), then ask Claude to run
+   `bash /tmp/nbis-check.sh --verify`. It prints one line per protection:
+   *configured*, *tested* or *not tested*. A protection with no line, or a
+   run that Claude or auto mode declined, counts as not tested. The lines
+   about `~/.claude/settings.json` say *unknown* there, since the sandbox
+   hides home; step 1's `check.sh` shows those keys. Run it again when you
+   change settings or add data. Typed with `!` it runs outside the sandbox
+   and reports NOT BLOCKED, which is expected there.
+   Do not run the session in `bypassPermissions` mode: there, hosts outside the
    network list connect without asking unless `strictAllowlist` is on.
 3. What the sandbox stops on purpose, and what to do instead:
    - `ssh`, `scp` and `rsync` to Uppmax, Dardel or other servers cannot
