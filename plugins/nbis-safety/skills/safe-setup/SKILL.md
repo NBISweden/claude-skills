@@ -155,8 +155,10 @@ Start from this, then adjust as listed:
 - **K0–K1 data** that is already public needs no data entries.
 - **Both kinds of work:** add
   `"ask": ["Bash(pip install *)", "Bash(uv add *)", "Bash(uv pip install *)",
-  "Bash(conda install *)", "Bash(mamba install *)", "Bash(npm install *)"]`
-  to `permissions`: Claude Code asks for these in every mode, even when the
+  "Bash(conda install *)", "Bash(mamba install *)", "Bash(npm install *)",
+  "Bash(Rscript -e *install*)", "Bash(R -e *install*)"]`
+  to `permissions` (the R rules cover `install.packages` and
+  `BiocManager::install`): Claude Code asks for these in every mode, even when the
   sandbox or auto mode would approve the command. The listed install
   commands ask; an install written another way may not.
 - **Development work:** drop `autoAllowBashIfSandboxed` (the default is
