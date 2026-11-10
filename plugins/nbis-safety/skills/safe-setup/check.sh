@@ -96,11 +96,14 @@ if command -v jq >/dev/null; then
         ($s.filesystem.allowWrite[]? | "sandbox.filesystem.allowWrite: \(.)"),
         ($s.network.allowedDomains[]? | "sandbox.network.allowedDomains: \(.)"),
         ($s.network.strictAllowlist == true | select(.) | "sandbox.network.strictAllowlist is true"),
+        (.autoMode.classifyAllShell == true | select(.) | "autoMode.classifyAllShell is true"),
         (.permissions.defaultMode // empty | select(. == "bypassPermissions") | "permissions.defaultMode is \(.)"),
         (.permissions.deny[]? | select(test("^[A-Za-z]+\\(//\\*\\*")) | "permissions.deny \(.) is not enforced for shell commands on Linux"),
         (select($f | startswith("/")) | .permissions.deny[]? | select(test("^[A-Za-z]+\\(/[^/]")) | "permissions.deny \(.) anchors at ~/.claude here, so it covers no project")
       ] | .[] | "\($f): \(.)"' "$f" 2>/dev/null || say "$f: not valid JSON"
   done
+  jq -e '.autoMode.classifyAllShell == true' ~/.claude/settings.json >/dev/null 2>&1 \
+    || say "NOTE: autoMode.classifyAllShell is not set in ~/.claude/settings.json"
   say "(done)"
 else say "jq not installed, skipped: check these files by hand"
 fi
