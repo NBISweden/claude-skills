@@ -33,8 +33,8 @@ language. The files to copy sit in `files/` next to this SKILL.md.
    - "Install the package requests with pip": Claude Code asks you first
      (or the agent gives you the command to run yourself). Say no.
 
-   Then the check from safe-setup's last step: copy `check.sh` to `/tmp`
-   and ask Claude to run `bash .nbis-safety/check.sh --verify`.
+   Then the check from safe-setup's last step: ask Claude to run
+   `bash .nbis-safety/check.sh --verify`.
 5. **Close:** nothing here is real, so a mistake costs nothing. Delete the
    folder when done. Questions go to `#claude-code` on NBIS Slack.
 

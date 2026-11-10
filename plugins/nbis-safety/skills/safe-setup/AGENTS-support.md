@@ -10,7 +10,8 @@ on the data.
   summarise or search files there, or any sequencing, variant, expression or
   sample file elsewhere (`.fastq`, `.bam`, `.cram`, `.vcf`, `.h5ad`, `.rds`,
   sample sheets). If you need a file's format, ask me, or write a small
-  synthetic example.
+  synthetic example. Made-up test files that are part of the code (for
+  example under `tests/`) are fine to read.
 - Use synthetic data in tests and examples. Never copy real rows, sample
   IDs or file contents into code, tests, commit messages or chat.
 - If you come across what looks like personal data (names, personal

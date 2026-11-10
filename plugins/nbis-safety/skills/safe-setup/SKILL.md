@@ -36,8 +36,8 @@ anywhere else:
 | `<project>/.gitignore` | Two lines, on a yes: `.claude/settings.json` and `.nbis-safety/` (step 5) |
 
 Never write `~/.claude/CLAUDE.md`, `~/.claude/settings.json` (except the
-separate, approved `strictAllowlist` and `classifyAllShell` lines and
-whole-computer baseline in step 3), `.claude/settings.local.json`,
+separate, approved `strictAllowlist`, its `sandbox.network.allowedDomains`
+list and `classifyAllShell`, and the whole-computer baseline, all in step 3), `.claude/settings.local.json`,
 or a file in a parent directory. Name the full paths when you show the files.
 
 ## 1. Check, without changing anything

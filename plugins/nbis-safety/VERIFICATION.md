@@ -101,3 +101,12 @@ safe first session. Recorded during the trial:
 - Time to a first useful session:
 - Where people got stuck:
 - What they worked around:
+
+## Record 3: the project-local check, 2026-11-10
+
+Claude Code 2.1.322, Ubuntu 26.04, `claude -p --model haiku`, auto mode, sandbox on.
+`bash .nbis-safety/check.sh --verify` run by Claude printed `tested: blocked` for the
+read (the test folder is covered by a mount of its own inside the sandbox) and for
+the host outside the list; the two user-settings lines were `unknown`. The same
+command in a terminal printed `NOT BLOCKED`. Not verified: the macOS rule (a folder
+that refuses listing).

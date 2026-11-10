@@ -104,8 +104,24 @@ expect 'not tested: reading a blocked project folder (the test file is missing'
 mv "$proj/.nbis-safety/blocked.away" "$proj/.nbis-safety/blocked"
 # 2, 5, 9, 11. canary hidden, as in a masked folder; support settings and strictAllowlist
 rm "$proj/.nbis-safety/blocked/canary"
+# an empty folder that nothing visibly hides is not evidence of a block
+out=$(CURL_MODE=split verify)
+refuse 'tested: blocked  reading a blocked project folder'
+expect 'not tested: reading a blocked project folder (the test file is missing or empty'
+# excluded commands and an empty settings file must not leave the lines green
+echo '{"sandbox":{"excludedCommands":["python3 *"]}}' > "$proj/.claude/settings.local.json"
+out=$(CURL_MODE=split verify)
+expect 'configured: NO  no command is excluded from the sandbox'
+: > "$home/.claude/settings.json.keep"; cp "$home/.claude/settings.json" "$home/.claude/settings.json.keep"
+printf ' \n' > "$home/.claude/settings.json"; rm "$proj/.claude/settings.local.json"
+out=$(CURL_MODE=split verify)
+expect 'configured: unknown  network list is a hard limit'
+mv "$home/.claude/settings.json.keep" "$home/.claude/settings.json"
+# a folder that refuses entry, as the macOS sandbox does it
+chmod 000 "$proj/.nbis-safety/blocked"
 out=$(CURL_MODE=split verify); code=$?
-expect 'tested: blocked  reading a blocked project folder'
+chmod 755 "$proj/.nbis-safety/blocked"
+[ "$(id -u)" = 0 ] || expect 'tested: blocked  reading a blocked project folder'
 expect 'tested: blocked  a host outside the network list'
 expect 'configured: yes  sandbox on in this project'
 expect 'configured: yes  network list is a hard limit'

@@ -25,10 +25,15 @@ if [ -n "$verify" ]; then
     # -f -s: inside the sandbox a missing local file can show up as an empty placeholder
     files=("$p"); [ -f "$l" ] && [ -s "$l" ] && files+=("$l")
     # the local file overrides the project file; deny lists from both count
-    pj=$(jq -s 'reduce .[] as $x ({}; . * $x) + {denyRead: [.[].sandbox.filesystem.denyRead[]?], deny: [.[].permissions.deny[]?]}' \
+    pj=$(jq -e -s 'if length > 0 and all(.[]; type == "object") then reduce .[] as $x ({}; . * $x) + {denyRead: [.[].sandbox.filesystem.denyRead[]?], deny: [.[].permissions.deny[]?]} else empty end' \
       "${files[@]}" 2>/dev/null) || pbad="cannot read $p${files[1]:+ or $l}"
-    uj=$(jq . "$u" 2>/dev/null) || ubad="cannot read ~/.claude/settings.json"
+    uj=$(jq -e 'if type == "object" then . else empty end' "$u" 2>/dev/null) || ubad="cannot read ~/.claude/settings.json"
   fi
+  masked() {   # $1: folder; true when the sandbox visibly hides it
+    local abs; abs=$(cd "$1" 2>/dev/null && pwd -P) || return 0   # cannot enter: refused
+    ls "$1" >/dev/null 2>&1 || return 0
+    [ -r /proc/self/mountinfo ] && awk -v d="$abs" '$5 == d { f = 1 } END { exit !f }' /proc/self/mountinfo
+  }
   conf() {   # $1: jq test, $2: what, $3: settings JSON, $4: why it is unknown, if it is
     if [ -n "$4" ]; then line "configured: unknown  $2 ($4)"
     elif jq -e "$1" <<<"$3" >/dev/null 2>&1; then line "configured: yes  $2"
@@ -41,13 +46,15 @@ if [ -n "$verify" ]; then
   elif ! jq -e 'any(.denyRead[]; rtrimstr("/") == "./.nbis-safety/blocked")' <<<"$pj" >/dev/null; then
     read_line="not tested: $what (safe-setup has not placed the test file; run it again)"
   else
-    # shortcut: a refused read of the canary is taken as the sandbox's doing because safe-setup created the file readable; a folder that is there but empty looks the same as a blocked one, also outside the sandbox; upgrade if Claude Code exposes a sandbox marker.
+    # A read that fails proves nothing by itself. It counts as blocked only when the sandbox's hand shows:
+    # on Linux the folder is covered by a mount of its own, on macOS listing it is refused.
     c=
     { IFS= read -r c < .nbis-safety/blocked/canary; } 2>/dev/null
     if [ "$c" = "nbis-safety canary: this file holds nothing secret" ]; then read_line="tested: NOT BLOCKED  $what"
     elif [ -n "$c" ]; then read_line="not tested: $what (the test file has changed; run safe-setup again)"
     elif [ ! -d .nbis-safety/blocked ]; then read_line="not tested: $what (the test file is missing; run safe-setup again)"
-    elif [ -r . ]; then read_line="tested: blocked  $what"
+    elif masked .nbis-safety/blocked; then read_line="tested: blocked  $what"
+    elif [ -r . ]; then read_line="not tested: $what (the test file is missing or empty, and nothing shows the sandbox hid it; run this in a Claude session, or run safe-setup again)"
     else read_line="not tested: $what (cannot read the project folder)"
     fi
   fi
@@ -61,6 +68,9 @@ if [ -n "$verify" ]; then
   conf '.sandbox.enabled == true' "sandbox on in this project" "$pj" "$pbad"
   conf '.sandbox.failIfUnavailable == true' "Claude Code stops if the sandbox cannot start" "$pj" "$pbad"
   conf '.sandbox.allowUnsandboxedCommands == false' "a failed command is not retried outside the sandbox" "$pj" "$pbad"
+  conf '(.sandbox.excludedCommands // []) | length == 0' "no command is excluded from the sandbox" "$pj" "$pbad"
+  conf '[.sandbox.filesystem.disabled, .sandbox.enableWeakerNestedSandbox, .sandbox.enableWeakerNetworkIsolation] | any(. == true) | not' "no setting weakens the sandbox" "$pj" "$pbad"
+  conf '.permissions.defaultMode != "bypassPermissions"' "permission checks are not bypassed" "$pj" "$pbad"
   if [ -n "$pbad" ] || jq -e '.sandbox.autoAllowBashIfSandboxed == false' <<<"$pj" >/dev/null; then
     conf '.autoMemoryEnabled == false' "memory off" "$pj" "$pbad"
   else line "not tested: memory off (development work keeps memory)"
@@ -79,7 +89,9 @@ if [ -n "$verify" ]; then
 
   # Network: one host on the list, one not.
   what="a host outside the network list"
-  if ! command -v curl >/dev/null; then line "not tested: network (curl is not installed)"
+  if jq -e -n --argjson p "${pj:-null}" --argjson u "${uj:-null}" '[$p, $u | .sandbox?.network?.allowedDomains[]?] | any(. == "example.com" or . == "*.com" or . == "*")' >/dev/null 2>&1; then
+    line "not tested: network (the test host example.com is on a network list)"
+  elif ! command -v curl >/dev/null; then line "not tested: network (curl is not installed)"
   elif ! curl -q -s -o /dev/null --max-time 5 https://pypi.org; then line "not tested: network (offline, or the listed host is unreachable)"
   elif curl -q -s -o /dev/null --max-time 5 https://example.com; then line "tested: NOT BLOCKED  $what"
   elif [ -n "$outside" ]; then line "not tested: network (a host outside the list was refused, but this run is outside the sandbox)"
