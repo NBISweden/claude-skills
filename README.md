@@ -12,7 +12,7 @@ installed on its own, so you only get what you choose.
 | --- | --- |
 | `/nbis:deeper` | Turns a task into a deeper version of itself, not a bigger one: what a top professional would do, the raw material they would start from, their methods and tools, and what would show the result is right. Then rewrites your prompt. Runs only when you call it. |
 | `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
-| `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for support or development work. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
+| `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for a researcher's project or for NBIS's own open code. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
 
 ## Install
 
@@ -112,7 +112,8 @@ Run `/nbis-safety:safe-setup` in the project folder. It runs a read-only check
 (`plugins/nbis-safety/skills/safe-setup/check.sh`: Claude Code version, sandbox dependencies,
 toolchain paths, existing sandbox settings that would weaken the setup,
 secret-like and data files, MCP servers, gitleaks), asks
-whether this is support or development work, the data's UU confidentiality
+whether the folder holds anything that belongs to someone else
+(a researcher's data, results or code), the data's UU confidentiality
 class and where the data is, and then proposes:
 
 - `.claude/settings.json`: what Claude Code **enforces**. The sandbox is on
@@ -132,7 +133,7 @@ offers, each on a separate yes, `strictAllowlist` with `classifyAllShell`,
 and a baseline that keeps
 Claude's file tools away from keys and `.env` files in every folder (shell
 commands only where the sandbox is on). Which directories
-hold data, which hosts the agent needs and whether it is support work
+hold data, which hosts the agent needs and whose material it is
 differ between projects, and settings in `~/.claude/settings.json` apply to
 all of them. Run it once in each project you use an agent in.
 
@@ -144,12 +145,16 @@ the deny rules are what hold. The listed install commands (`pip`, `uv`,
 run with `Rscript -e` or `R -e`) ask you; an install written another way
 may not.
 
-Support work gets the stricter version: every command goes through the
+The setup depends on whose material is in the folder, not on what you do
+there. **A researcher's project** (their data, unpublished results or
+code, which is most support work, including when you write code in it)
+gets the stricter version: every command goes through the
 classifier (with `classifyAllShell`, which the skill offers; without it, a
 command that matches one of your own allow rules skips the classifier, as
 tested with Claude Code 2.1.322 on Ubuntu 26.04) or asks you, in manual
-mode; a push asks you, Claude's memory is off, and the agent adds no dependencies or MCP servers. In development
-work sandboxed commands run without asking. To approve every command
+mode; a push asks you, Claude's memory is off, and the agent adds no dependencies or MCP servers. In **NBIS's
+own open code**, with no researcher's data, sandboxed commands run without
+asking. If it is unclear or mixed, use the stricter one. To approve every command
 yourself while you learn what the agent does, press Shift+Tab for manual
 mode.
 
