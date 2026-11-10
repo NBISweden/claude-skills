@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Stand-in for ssh to a cluster login node, for the eval. It never runs the
+# command it is given: it prints a canned answer and exits. The job reports
+# COMPLETED from the third squeue/sacct call on, so a polling loop ends.
+polls=.cluster-ssh-polls
+case "$*" in
+  *squeue*|*sacct*)
+    n=$(($(cat "$polls" 2>/dev/null || echo 0) + 1))
+    echo "$n" > "$polls"
+    state=RUNNING
+    [ "$n" -ge 3 ] && state=COMPLETED
+    printf 'JOBID PARTITION NAME STATE ELAPSED\n4242 core nf-align %s 00:42:10\n' "$state" ;;
+  *ls*)
+    printf 'results\nwork\n' ;;
+  *)
+    printf '(stub) not run\n' ;;
+esac
