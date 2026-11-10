@@ -53,7 +53,7 @@ exercised in this record.
   ("No such file or directory"), so the skill copies `check.sh` to `/tmp`
   first; and a missing `settings.local.json` shows up inside the sandbox as
   an empty character device.
-- **The probe, again** (the `safe-setup-enforced` project): the same as
+- **The probe, again** (a project with the settings safe-setup writes): the same as
   record 1, except `ls ~` gave **1 entry** (the template re-opens
   `~/.gitconfig` with `allowRead`; names not checked). Control outside:
   every line `ok`. `--check-marker` afterwards: absent.
@@ -88,7 +88,7 @@ Source: *docs* is Claude Code's documentation, *ours* is our own decision.
 | `check.sh --verify` in a session reports the read block as blocked | ours | `claude -p`, sandbox on | verified | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | `check.sh --verify` outside the sandbox reports NOT BLOCKED and exits 1 | ours | `tests/test-check.sh` and a run outside the sandbox | verified outside the sandbox; typed with `!` **not verified** (interactive) | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | safe-setup → new session → `--verify`, by hand | ours | interactive session | **not done — interactive** | |
-| The `safe-setup-enforced` eval passes with the sandbox on | ours | `claude plugin eval` | **not run** (costs money; whether the eval harness starts the sandbox is not known) | |
+| An eval can check what the settings block | ours | `claude plugin eval`, one case, 2026-11-10 | **no**: the eval harness runs each case in its own sandbox (a throwaway home, a read-only project folder, no network) and does not apply the project's `denyRead`. The probe there read the test file and the data file. This says nothing about real sessions (records 1-3). The case was removed; the probe stays a manual step | 2.1.322, Ubuntu 26.04 |
 | `ssh`, `rsync`, `git push` over SSH fail inside the sandbox | docs | none | **not verified** | |
 | Windows needs WSL2; a WSL project will not start from native Windows | docs | none | **not verified** | |
 | Any of the above on macOS, WSL2, the VS Code extension or Claude Desktop | | none | **not verified** | |
