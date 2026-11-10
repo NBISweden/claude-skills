@@ -139,8 +139,9 @@ Claude Code starts in auto mode: a classifier checks each command before it
 runs and stops what you might approve without reading, such as data sent
 out or files deleted. It is a second check, not a boundary; the sandbox and
 the deny rules are what hold. The listed install commands (`pip`, `uv`,
-`conda`, `mamba` and `npm`) ask you; an install written another way may
-not.
+`conda`, `mamba`, `npm`, and R's `install.packages`/`BiocManager::install`
+run with `Rscript -e` or `R -e`) ask you; an install written another way
+may not.
 
 Support work gets the stricter version: every command goes through the
 classifier (or asks you, in manual mode), a push asks you, Claude's memory
