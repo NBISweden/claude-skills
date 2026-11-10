@@ -73,7 +73,7 @@ if [ -n "$verify" ]; then
   conf '.permissions.defaultMode != "bypassPermissions"' "permission checks are not bypassed" "$pj" "$pbad"
   if [ -n "$pbad" ] || jq -e '.sandbox.autoAllowBashIfSandboxed == false' <<<"$pj" >/dev/null; then
     conf '.autoMemoryEnabled == false' "memory off" "$pj" "$pbad"
-  else line "not tested: memory off (development work keeps memory)"
+  else line "not tested: memory off (NBIS's own open code keeps memory)"
   fi
   conf 'any(.denyRead[]; . == "~/" or . == "~")' "home is blocked for shell commands" "$pj" "$pbad"
   # Data folders by number, never by path: a path can carry an identifier.

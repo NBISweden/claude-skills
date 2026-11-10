@@ -81,10 +81,10 @@ Source: *docs* is Claude Code's documentation, *ours* is our own decision.
 | With `classifyAllShell`, a command matching an allow rule goes through the classifier | docs | `claude -p`, transcript `reasonType` | verified | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | `Rscript -e`/`R -e` installs ask | ours | `claude -p`, fake `Rscript` | verified | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | `pip`, `uv`, `conda`, `mamba`, `npm` installs ask | docs | none | **not verified** | |
-| `git push` asks (support work) | ours | eval checks it is written, not that it asks | **not verified** | |
+| `git push` asks (a researcher's project) | ours | eval checks it is written, not that it asks | **not verified** | |
 | A failed command is not retried outside the sandbox | docs | none | **not verified** | |
 | Claude Code refuses to start when the sandbox cannot (`failIfUnavailable`) | docs | none | **not verified** | |
-| Memory is off for support work | docs | `--verify` reads the key | configured only, **not verified** | |
+| Memory is off for a researcher's project | docs | `--verify` reads the key | configured only, **not verified** | |
 | `check.sh --verify` in a session reports the read block as blocked | ours | `claude -p`, sandbox on | verified | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | `check.sh --verify` outside the sandbox reports NOT BLOCKED and exits 1 | ours | `tests/test-check.sh` and a run outside the sandbox | verified outside the sandbox; typed with `!` **not verified** (interactive) | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | safe-setup → new session → `--verify`, by hand | ours | interactive session | **not done — interactive** | |

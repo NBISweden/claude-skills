@@ -1,6 +1,6 @@
 ---
 name: safe-setup
-description: Check a project and set up Claude Code for it the NBIS way - sandbox, read limits on home and data directories, deny rules for secrets, and an AGENTS.md for support or development work. Invoked explicitly with /nbis-safety:safe-setup; writes nothing until the user approves.
+description: Check a project and set up Claude Code for it the NBIS way - sandbox, read limits on home and data directories, deny rules for secrets, and an AGENTS.md for a researcher's project or for NBIS's own open code. Invoked explicitly with /nbis-safety:safe-setup; writes nothing until the user approves.
 disable-model-invocation: true
 ---
 
@@ -67,7 +67,7 @@ off, `allowUnsandboxedCommands: true`, the weaker-isolation flags, every
 `excludedCommands` entry (it runs outside the sandbox with full access),
 `allowRead`/`allowWrite` entries that open home or a data directory, broad
 `allowedDomains`, `permissions.defaultMode` set to `bypassPermissions`, and
-for support work `autoAllowBashIfSandboxed: true` (the `/sandbox` panel
+for a researcher's project `autoAllowBashIfSandboxed: true` (the `/sandbox` panel
 writes that to `settings.local.json`). It also lists deny rules that cover
 nothing (see "Whole computer" in step 3); propose rewriting them.
 Do not call the setup safe while one of them remains; say which one and
@@ -75,8 +75,13 @@ what it allows.
 
 ## 2. Ask, in one message
 
-1. Is this **support** work (a researcher's project and data) or
-   **development** (NBIS's own code)?
+1. Does this folder hold anything that belongs to someone else: a
+   researcher's data, unpublished results, or their code? **Yes** is
+   **a researcher's project** (the stricter setup). **No**, it is
+   **NBIS's own open code**, public or meant to be (the lighter setup).
+   It is about whose material it is, not what you do: writing code in a
+   researcher's project is still a researcher's project. Unclear or
+   mixed counts as yes. "Support project" means yes.
 2. What is the data's confidentiality class on UU's 0–3 scale? K0–K1
    public, K2 internal, personal data (always at least K2), K3 sensitive
    (health, genetic data of people, ethics permit, clinical), or not sure.
@@ -96,7 +101,7 @@ without a confirmed agreement. Say that the next step is to ask their PI,
 Johan (NBIS CTO) or their manager, and link the gateway page. For K3, do
 not offer "run this again if the data owner approves": NBIS's rule is that
 K3 data is not used with AI coding agents, whoever approves. For
-non-support work on a project whose data is K3, the agent may still be set
+NBIS's own code that belongs to a project whose data is K3, the agent may still be set
 up on a copy of the code with no data reachable, but only if the user
 confirms the data is not on this machine.
 
@@ -170,10 +175,10 @@ Start from this, then adjust as listed:
   `BiocManager::install`): Claude Code asks for these in every mode, even when the
   sandbox or auto mode would approve the command. The listed install
   commands ask; an install written another way may not.
-- **Development work:** drop `autoAllowBashIfSandboxed` (the default is
+- **NBIS's own open code:** drop `autoAllowBashIfSandboxed` (the default is
   `true`, so sandboxed commands run without asking) and add
   `registry.npmjs.org` if the project uses Node.
-- **Support work:** keep `autoAllowBashIfSandboxed: false`, so no command
+- **A researcher's project:** keep `autoAllowBashIfSandboxed: false`, so no command
   runs unchecked: in auto mode the classifier reviews each one (with
   `classifyAllShell`, below; without it, a command matching one of the
   user's own allow rules skips the classifier), in manual mode the user
@@ -187,7 +192,7 @@ Start from this, then adjust as listed:
   rule approves) and blocks what goes beyond the request, such as sending data
   out, running downloaded code or deleting files that were there before.
   It catches what a hurried user would approve without reading, so
-  recommend it for support work too. Do not set `permissions.defaultMode`
+  recommend it for a researcher's project too. Do not set `permissions.defaultMode`
   in the project: `auto` has no effect there. Tell the user that Shift+Tab
   cycles to manual mode, where every command asks, if they want to watch
   what the agent does at first. The classifier is a second check, not a
@@ -216,8 +221,8 @@ Start from this, then adjust as listed:
   `sandbox.network.allowedDomains` next to `strictAllowlist` in
   `~/.claude/settings.json`, merged with what is there, and tell the user
   that this one list then applies to every sandboxed project on the
-  computer. For support
-  work, do not call the setup safe without `classifyAllShell`.
+  computer. For a
+  researcher's project, do not call the setup safe without `classifyAllShell`.
 - **Whole computer (offer, separate yes):** a folder where nobody ran this
   skill has no protection. Offer to merge these into the `permissions.deny`
   list in `~/.claude/settings.json`, keeping the user's own entries:
@@ -248,7 +253,8 @@ project paths there.
 
 ## 4. Build the instructions
 
-- `AGENTS.md`: read `AGENTS-support.md` or `AGENTS-dev.md` and write
+- `AGENTS.md`: read `AGENTS-support.md` (a researcher's project) or
+  `AGENTS-dev.md` (NBIS's own open code) and write
   `AGENTS.md` with the Write tool (not `cp`), filling in the data
   directories.
 - `CLAUDE.md`: make sure it contains the line `@AGENTS.md`, so Claude Code

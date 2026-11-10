@@ -21,7 +21,7 @@ language. The files to copy sit in `files/` next to this SKILL.md.
    safe-setup yourself; the user does that in the exercises.
 3. **Tell the user the next steps:** quit this session, `cd` into the new
    folder, start Claude Code there and run `/nbis-safety:safe-setup`
-   (support work, K1, data in `./data`). Then start a new session in the
+   (answer that it is a researcher's project, K1, data in `./data`). Then start a new session in the
    folder for the exercises.
 4. **Give the three exercises** to type in that new session, each with
    what they should see:
