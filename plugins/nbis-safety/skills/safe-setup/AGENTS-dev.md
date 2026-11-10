@@ -1,4 +1,7 @@
-# Agent instructions: NBIS development project
+# Agent instructions: NBIS's own open code
+
+This folder holds NBIS's own code, public or meant to be, and no
+researcher's data. If that changes, run `/nbis-safety:safe-setup` again.
 
 ## Secrets
 

@@ -1,6 +1,7 @@
-# Agent instructions: NBIS support project
+# Agent instructions: a researcher's project
 
-This is NBIS support work. The data belongs to the researcher's group, and
+This folder holds a researcher's material (NBIS support work), whatever
+kind of work is done in it. The data belongs to the researcher's group, and
 sending it to an AI service is not covered by default. Work on the code, not
 on the data.
 
