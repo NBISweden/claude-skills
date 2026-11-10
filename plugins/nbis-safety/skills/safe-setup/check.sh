@@ -38,14 +38,15 @@ if [ -n "$verify" ]; then
   # Read block: a harmless file with known content that safe-setup placed in a folder it blocks.
   what="reading a blocked project folder"
   if [ -n "$pbad" ]; then read_line="not tested: $what ($pbad)"
-  elif ! jq -e 'any(.denyRead[]; rtrimstr("/") == "./.nbis-safety")' <<<"$pj" >/dev/null; then
+  elif ! jq -e 'any(.denyRead[]; rtrimstr("/") == "./.nbis-safety/blocked")' <<<"$pj" >/dev/null; then
     read_line="not tested: $what (safe-setup has not placed the test file; run it again)"
   else
-    # shortcut: a refused read of the canary is taken as the sandbox's doing because safe-setup created the file readable; upgrade if Claude Code exposes a sandbox marker.
+    # shortcut: a refused read of the canary is taken as the sandbox's doing because safe-setup created the file readable; a folder that is there but empty looks the same as a blocked one, also outside the sandbox; upgrade if Claude Code exposes a sandbox marker.
     c=
-    { IFS= read -r c < .nbis-safety/canary; } 2>/dev/null
+    { IFS= read -r c < .nbis-safety/blocked/canary; } 2>/dev/null
     if [ "$c" = "nbis-safety canary: this file holds nothing secret" ]; then read_line="tested: NOT BLOCKED  $what"
     elif [ -n "$c" ]; then read_line="not tested: $what (the test file has changed; run safe-setup again)"
+    elif [ ! -d .nbis-safety/blocked ]; then read_line="not tested: $what (the test file is missing; run safe-setup again)"
     elif [ -r . ]; then read_line="tested: blocked  $what"
     else read_line="not tested: $what (cannot read the project folder)"
     fi
@@ -68,7 +69,7 @@ if [ -n "$verify" ]; then
   # Data folders by number, never by path: a path can carry an identifier.
   # The matching Read() deny rule is what keeps Claude's own file tools out.
   [ -z "$pbad" ] && while IFS= read -r d; do line "$d"; done < <(jq -r '.deny as $deny
-    | [.denyRead[] | rtrimstr("/") | select(. != "~" and . != "./.nbis-safety")] | to_entries[]
+    | [.denyRead[] | rtrimstr("/") | select(. != "~" and . != "./.nbis-safety/blocked")] | to_entries[]
     | (.value | if startswith("./") then "Read(/" + .[2:] + "/**)" elif startswith("/") then "Read(/" + . + "/**)"
                else "Read(" + . + "/**)" end) as $rule
     | "configured: \(if any($deny[]; . == $rule) then "yes" else "NO" end)  data folder \(.key + 1) out of reach of shell commands and Claude'"'"'s file tools"' \

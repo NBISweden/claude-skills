@@ -31,7 +31,8 @@ anywhere else:
 | `<project>/.claude/settings.json` | The enforced settings (step 3) |
 | `<project>/AGENTS.md` | The instructions (step 4) |
 | `<project>/CLAUDE.md` | The line `@AGENTS.md`, appended if the file exists |
-| `<project>/.nbis-safety/canary` | One known, harmless line that `check.sh --verify` tries to read (step 5) |
+| `<project>/.nbis-safety/blocked/canary` | One known, harmless line that `check.sh --verify` tries to read (step 5) |
+| `<project>/.nbis-safety/check.sh` | A copy of this skill's `check.sh`, so the check can run inside the sandbox (step 5) |
 | `<project>/.gitignore` | Two lines, on a yes: `.claude/settings.json` and `.nbis-safety/` (step 5) |
 
 Never write `~/.claude/CLAUDE.md`, `~/.claude/settings.json` (except the
@@ -113,7 +114,7 @@ Start from this, then adjust as listed:
     "autoAllowBashIfSandboxed": false,
     "allowUnsandboxedCommands": false,
     "filesystem": {
-      "denyRead": ["~/", "./.nbis-safety"],
+      "denyRead": ["~/", "./.nbis-safety/blocked"],
       "allowRead": [".", "~/.gitconfig"],
       "denyWrite": []
     },
@@ -126,12 +127,12 @@ Start from this, then adjust as listed:
     "deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)",
              "Read(/**/.env)", "Read(/**/.env.*)", "Read(/**/*.pem)", "Read(/**/*.key)",
              "Read(/**/*.p12)", "Read(/**/.netrc)", "Read(/**/id_rsa*)", "Read(/**/id_ed25519*)",
-             "Read(/**/credentials*)", "Read(/.nbis-safety/**)"]
+             "Read(/**/credentials*)", "Read(/.nbis-safety/blocked/**)"]
   }
 }
 ```
 
-- **Test file:** `./.nbis-safety` in `denyRead` and `Read(/.nbis-safety/**)`
+- **Test file:** `./.nbis-safety/blocked` in `denyRead` and `Read(/.nbis-safety/blocked/**)`
   keep the test file from step 5 out of reach the same way as a data
   folder, so `check.sh --verify` can test the block without touching real
   data or home.
@@ -206,7 +207,14 @@ Start from this, then adjust as listed:
   set), with the reason: "without it, a command matching one of your own
   allow rules skips the classifier". Both apply to all the user's
   projects, so write them only on a separate yes. If the user says no,
-  say plainly that the network list is then not a hard limit. For support
+  say plainly that the network list is then not a hard limit.
+  With `strictAllowlist` on, Claude Code ignores the project's
+  `allowedDomains`: even a host listed there is refused (tested, 2.1.322,
+  Ubuntu). So write the same registry list as
+  `sandbox.network.allowedDomains` next to `strictAllowlist` in
+  `~/.claude/settings.json`, merged with what is there, and tell the user
+  that this one list then applies to every sandboxed project on the
+  computer. For support
   work, do not call the setup safe without `classifyAllShell`.
 - **Whole computer (offer, separate yes):** a folder where nobody ran this
   skill has no protection. Offer to merge these into the `permissions.deny`
@@ -254,7 +262,7 @@ is not there yet, show the result, and point out any weakening key from
 step 1 that the user chose to keep), append to an existing `CLAUDE.md`,
 and show a diff against an existing `AGENTS.md`.
 
-Write `.nbis-safety/canary` first, before `.claude/settings.json`, with
+Copy this skill's `check.sh` to `.nbis-safety/check.sh` (overwrite an older copy: it is ours), and write `.nbis-safety/blocked/canary` first, before `.claude/settings.json`, with
 the Write tool, containing exactly the line
 `nbis-safety canary: this file holds nothing secret`. Do not overwrite it:
 if it exists, leave it as it is.
@@ -285,11 +293,10 @@ Tell the user:
    Ubuntu's AppArmor restriction. On Ubuntu 24.04 and later, the packaged
    profile `/etc/apparmor.d/bwrap-userns-restrict` can override the fix the
    docs give; the user, not Claude, decides whether to disable it.
-2. Check it, in that session. Inside the sandbox this skill's folder
-   under home cannot be read, so first copy the check out of it: type
-   `! cp <this skill's directory>/check.sh /tmp/nbis-check.sh` (give the
-   user the real path), then ask Claude to run
-   `bash /tmp/nbis-check.sh --verify`. It prints one line per protection:
+2. Check it, in that session: ask Claude to run
+   `bash .nbis-safety/check.sh --verify`. (This skill's own folder is
+   under home, which the sandbox hides; that is why the project has a
+   copy.) It prints one line per protection:
    *configured*, *tested* or *not tested*. A protection with no line, or a
    run that Claude or auto mode declined, counts as not tested. The lines
    about `~/.claude/settings.json` say *unknown* there, since the sandbox

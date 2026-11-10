@@ -73,16 +73,16 @@ ln -s "$(command -v jq)" "$nocurl/jq"
 echo 'not a real key' > "$home/.ssh/id_canary"
 verify() { HOME=$home PATH="$fakebin:$PATH" bash "$check" --verify "$proj" 2>&1; }
 support='{"sandbox":{"enabled":true,"failIfUnavailable":true,"autoAllowBashIfSandboxed":false,"allowUnsandboxedCommands":false,
-  "filesystem":{"denyRead":["~/","./data","./.nbis-safety"],"allowRead":["."],"denyWrite":["./data"]},
+  "filesystem":{"denyRead":["~/","./data","./.nbis-safety/blocked"],"allowRead":["."],"denyWrite":["./data"]},
   "network":{"allowedDomains":["pypi.org"]}},
-  "permissions":{"deny":["Read(/data/**)","Edit(/data/**)","Read(/.nbis-safety/**)"]},"autoMemoryEnabled":false}'
+  "permissions":{"deny":["Read(/data/**)","Edit(/data/**)","Read(/.nbis-safety/blocked/**)"]},"autoMemoryEnabled":false}'
 strict='{"sandbox":{"network":{"strictAllowlist":true}},"autoMode":{"classifyAllShell":true}}'
 setup() {   # $1: project settings, $2: user settings ('' for no file); places a readable canary
   echo "$1" > "$proj/.claude/settings.json"
   rm -f "$proj/.claude/settings.local.json" "$home/.claude/settings.json"
   [ -n "$2" ] && echo "$2" > "$home/.claude/settings.json"
-  mkdir -p "$proj/.nbis-safety"
-  echo 'nbis-safety canary: this file holds nothing secret' > "$proj/.nbis-safety/canary"
+  mkdir -p "$proj/.nbis-safety/blocked"
+  echo 'nbis-safety canary: this file holds nothing secret' > "$proj/.nbis-safety/blocked/canary"
 }
 exit_is() { [ "$code" = "$1" ] || { echo "FAIL: exit $code, expected $1"; fail=1; }; }
 
@@ -96,8 +96,14 @@ refuse 'tested: blocked'
 out=$(CURL_MODE=split verify)
 refuse 'tested: blocked'
 expect 'not tested: network'
+# test folder gone altogether (a fresh clone, or it was deleted): not tested, never "blocked"
+mv "$proj/.nbis-safety/blocked" "$proj/.nbis-safety/blocked.away"
+out=$(CURL_MODE=split verify)
+refuse 'tested: blocked  reading a blocked project folder'
+expect 'not tested: reading a blocked project folder (the test file is missing'
+mv "$proj/.nbis-safety/blocked.away" "$proj/.nbis-safety/blocked"
 # 2, 5, 9, 11. canary hidden, as in a masked folder; support settings and strictAllowlist
-rm "$proj/.nbis-safety/canary"
+rm "$proj/.nbis-safety/blocked/canary"
 out=$(CURL_MODE=split verify); code=$?
 expect 'tested: blocked  reading a blocked project folder'
 expect 'tested: blocked  a host outside the network list'
@@ -120,7 +126,7 @@ refuse 'tested: blocked  a host'
 out=$(HOME=$home PATH=$nocurl "$BASH" "$check" --verify "$proj" 2>&1)
 expect 'not tested: network (curl is not installed)'
 # 3. the canary's folder is not in denyRead
-setup "$(jq -c '.sandbox.filesystem.denyRead -= ["./.nbis-safety"]' <<<"$support")" "$strict"
+setup "$(jq -c '.sandbox.filesystem.denyRead -= ["./.nbis-safety/blocked"]' <<<"$support")" "$strict"
 out=$(verify)
 expect 'not tested: reading a blocked project folder'
 # 4. sandbox off

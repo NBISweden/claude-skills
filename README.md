@@ -122,7 +122,8 @@ class and where the data is, and then proposes:
   directories; Claude's own file tools are denied the data and secrets; the
   network is limited to package registries, and any other host needs your
   approval, or in auto mode the classifier's. For a hard block, the skill
-  offers `strictAllowlist` in your `~/.claude/settings.json`, the only place
+  offers `strictAllowlist` in your `~/.claude/settings.json`, together with
+  the registry list (with it on, a project's own list is ignored), the only place
   Claude Code reads it (not verified: that hosts on the project's list
   still connect with it on).
 - `AGENTS.md` plus `@AGENTS.md` in `CLAUDE.md`: **instructions** that
@@ -178,7 +179,7 @@ VS Code extension and Claude Desktop): shell commands inside the sandbox
 could not read `~/.ssh`, the data directory or `.env`. What has been
 verified since, on which version and platform, and what has not, is in
 [VERIFICATION.md](plugins/nbis-safety/VERIFICATION.md). Not verified there
-so far: `strictAllowlist` with the project's list, the `pip`, `uv`, `conda`,
+so far: the `pip`, `uv`, `conda`,
 `mamba`, `npm` and push `ask` rules, memory off, a failed command not being
 retried outside the sandbox, `ssh` and `rsync` failing inside it, and the
 Windows/WSL2 note.

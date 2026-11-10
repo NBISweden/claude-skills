@@ -76,7 +76,8 @@ Source: *docs* is Claude Code's documentation, *ours* is our own decision.
 | Claude's Grep tool is refused the data folders | docs | `claude -p` | no Grep tool in this version; search is by shell command | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | Deny rules keep `.env` and keys from shell commands | docs | earlier manual test (README) | shell reads of `.env` failed | 2.1.318, Ubuntu 26.04 and macOS 27.0.1, before this record |
 | An unlisted host is refused in auto mode | docs | probe | verified for `claude -p` | 2.1.322, Ubuntu 26.04, 2026-11-10 |
-| `strictAllowlist` in `~/.claude/settings.json` makes the network list a hard limit, and hosts on the project list still connect | docs | none | **not verified — needs a run with the key in ~/.claude/settings.json** | |
+| `strictAllowlist` in `~/.claude/settings.json` makes the network list a hard limit | probe in a project under home, key added to the real user settings for one run and restored | **verified**: an unlisted host was refused. But a host listed **only in the project** was refused too; with the list next to `strictAllowlist` in user settings the listed host connected | 2.1.322, Ubuntu 26.04, 2026-11-10 |
+| The sandbox blocks `~/.ssh`, the canary and the data folder for a project **under home** | same run | **verified**: all three reads failed, a project file was readable | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | With `classifyAllShell`, a command matching an allow rule goes through the classifier | docs | `claude -p`, transcript `reasonType` | verified | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | `Rscript -e`/`R -e` installs ask | ours | `claude -p`, fake `Rscript` | verified | 2.1.322, Ubuntu 26.04, 2026-11-10 |
 | `pip`, `uv`, `conda`, `mamba`, `npm` installs ask | docs | none | **not verified** | |
