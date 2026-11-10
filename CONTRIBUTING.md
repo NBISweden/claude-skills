@@ -99,6 +99,10 @@ pull request. Run them locally before you ask:
 claude plugin eval plugins/<plugin> --runs 1 --scaffold --allow-tools Bash Write Edit
 ```
 
+When CI's pinned Claude Code version is raised, run the `safe-setup-enforced`
+eval and the file-tool check in `plugins/nbis-safety/VERIFICATION.md` again,
+and add a new dated record there.
+
 ## Removal
 
 Items without an owner, or whose evals fail on `main` for more than a

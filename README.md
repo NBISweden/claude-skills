@@ -123,7 +123,8 @@ class and where the data is, and then proposes:
   network is limited to package registries, and any other host needs your
   approval, or in auto mode the classifier's. For a hard block, the skill
   offers `strictAllowlist` in your `~/.claude/settings.json`, the only place
-  Claude Code reads it.
+  Claude Code reads it (not verified: that hosts on the project's list
+  still connect with it on).
 - `AGENTS.md` plus `@AGENTS.md` in `CLAUDE.md`: **instructions** that
   Copilot, Codex, Cursor and Gemini read too. They guide the agent but are
   not a boundary.
@@ -174,7 +175,13 @@ macOS and WSL2 not tested).
 
 Tested with Claude Code 2.1.318 on Ubuntu 26.04 (CLI) and macOS 27.0.1 (CLI,
 VS Code extension and Claude Desktop): shell commands inside the sandbox
-could not read `~/.ssh`, the data directory or `.env`.
+could not read `~/.ssh`, the data directory or `.env`. What has been
+verified since, on which version and platform, and what has not, is in
+[VERIFICATION.md](plugins/nbis-safety/VERIFICATION.md). Not verified there
+so far: `strictAllowlist` with the project's list, the `pip`, `uv`, `conda`,
+`mamba`, `npm` and push `ask` rules, memory off, a failed command not being
+retried outside the sandbox, `ssh` and `rsync` failing inside it, and the
+Windows/WSL2 note.
 
 ## Contributing
 

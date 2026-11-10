@@ -144,5 +144,17 @@ echo '{"sandbox":{"enabled":false}}' > "$proj/.claude/settings.local.json"
 out=$(verify)
 expect 'configured: NO  sandbox on in this project'
 
+# probe.sh outside the sandbox (the control): every probe ok, outcomes only, and the home marker found
+out=$(cd "$proj" && HOME=$home PATH="$fakebin:$PATH" CURL_MODE=open bash "$here/probe/probe.sh" data/s1.fastq 2>&1)
+for p in 'ls ~/.ssh' 'read ~/.claude/settings.json' 'read canary content' 'read data file' 'write in project' \
+         'write in home' 'listed host' 'unlisted host'; do expect "$p: ok"; done
+refuse 's1.fastq'
+refuse 'CANARYREAD'
+refuse 'id_canary'
+refuse 'nothing secret'
+out=$(HOME=$home bash "$here/probe/probe.sh" --check-marker 2>&1)
+expect 'home marker: present (removed)'
+[ -e "$home/.nbis-probe-marker" ] && { echo "FAIL: --check-marker left the marker"; fail=1; }
+
 [ "$fail" = 0 ] && echo "test-check: ok"
 exit "$fail"
