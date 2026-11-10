@@ -116,13 +116,13 @@ whether this is support or development work, the data's UU confidentiality
 class and where the data is, and then proposes:
 
 - `.claude/settings.json`: what Claude Code **enforces**. The sandbox is on
-  and cannot be bypassed by retrying a command unsandboxed; shell commands
+  and a failed command is not retried outside it; shell commands
   cannot read your home directory (apart from your toolchain) or the data
   directories; Claude's own file tools are denied the data and secrets; the
   network is limited to package registries, and any other host needs your
   approval, or in auto mode the classifier's. For a hard block, the skill
   offers `strictAllowlist` in your `~/.claude/settings.json`, the only place
-  Claude Code reads it; support work needs it.
+  Claude Code reads it.
 - `AGENTS.md` plus `@AGENTS.md` in `CLAUDE.md`: **instructions** that
   Copilot, Codex, Cursor and Gemini read too. They guide the agent but are
   not a boundary.
@@ -138,7 +138,9 @@ all of them. Run it once in each project you use an agent in.
 Claude Code starts in auto mode: a classifier checks each command before it
 runs and stops what you might approve without reading, such as data sent
 out or files deleted. It is a second check, not a boundary; the sandbox and
-the deny rules are what hold. Installing a package always asks you.
+the deny rules are what hold. The listed install commands (`pip`, `uv`,
+`conda`, `mamba` and `npm`) ask you; an install written another way may
+not.
 
 Support work gets the stricter version: every command goes through the
 classifier (or asks you, in manual mode), a push asks you, Claude's memory
@@ -149,6 +151,10 @@ mode.
 
 With the sandbox on, `ssh`, `rsync` and `git push` to servers don't work
 from inside Claude Code: run them yourself, or with `!` at the prompt.
+On Windows the sandbox needs WSL2: set up and open the project in WSL,
+since a project set up there will not start from native Windows. To undo
+the setup, see [Undo](plugins/nbis-safety/skills/safe-setup/SKILL.md#undo):
+the skill's report lists each file and line it added.
 Background: NBIS's gateway page on AI coding agents and the technical guide
 under it, on Confluence.
 
