@@ -95,8 +95,9 @@ Skip what the user already answered.
 
 **Stop, and write nothing, when** the class is K3, the user is not sure of
 the class or does not know who owns the data, or it is personal data
-without a confirmed agreement. Say that the next step is to ask their PI,
-Johan (NBIS CTO) or their manager, and link the gateway page. For K3, do
+without a confirmed agreement. Say who to ask next and link the gateway
+page: for a researcher's project, their PI, project coordinator or manager;
+for NBIS's own code, Johan (NBIS CTO) or their manager. For K3, do
 not offer "run this again if the data owner approves": NBIS's rule is that
 K3 data is not used with AI coding agents, whoever approves. For
 NBIS's own code that belongs to a project whose data is K3, the agent may still be set
