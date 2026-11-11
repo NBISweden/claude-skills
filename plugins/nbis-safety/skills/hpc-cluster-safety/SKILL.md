@@ -1,142 +1,118 @@
 ---
 name: hpc-cluster-safety
-description: Safety and etiquette rules for working on a shared HPC cluster over SSH (login nodes, shared filesystems, job schedulers like SLURM/PBS). Use whenever running commands on a remote HPC cluster - checking pipeline/job status, debugging a failure, or doing any file/data work on a login node - to avoid degrading a shared resource for other users. Not for local/single-tenant machines.
+description: Safety and etiquette rules for working on a shared HPC cluster (login nodes, shared filesystems, job schedulers like SLURM/PBS), whether Claude reaches it over SSH or runs directly on a login node. Use whenever running commands on a cluster - running a bioinformatics tool, submitting or checking jobs, debugging a failed pipeline, searching for files, or any file/data work on a login node - to avoid degrading a shared resource for other users. Not for a laptop, workstation or other machine that only you use.
 ---
 
 # HPC Cluster Safety
 
-A cluster login node and its shared filesystem (Lustre/GPFS/etc.) are **multi-tenant
-shared resources**. Every rule here exists because the underlying action degrades
-service for every other user on the system, not just your own session - treat that
-as the standing justification, not each individual rule.
+A login node and its shared filesystem (Lustre/GPFS/etc.) are multi-tenant.
+Every rule below exists because the action degrades service for every other
+user, not only your own session.
 
-## 1. Never run real compute on a login node
+If a rule says to ask and the user is away, do the safe part, leave the rest
+undone, and report what is waiting on an answer. Do not guess.
 
-Login nodes exist for file management, environment setup, light editing, and job
-submission - not for running the actual workload. If the login node is
-overburdened, nobody can submit or manage jobs.
+## 1. Run real compute through the scheduler
 
-- Anything that does real work - running a tool against real data, multi-threaded
-  processing, anything that could run more than a few seconds of CPU - goes through
-  the scheduler (`srun`/`sbatch` for SLURM; the equivalent for PBS/SGE/LSF), never
-  bare SSH execution.
-- Quick, cheap operations are fine directly on the login node: reading logs,
-  `--version` checks, `sacct`/`squeue`, `cat`/`tail` on small files.
-- If you're not sure which side of that line something falls on, ask rather than
-  guess - "this should only take a few seconds" is not a safe-to-guess judgment
-  call, it's exactly the kind of thing that turns out to be wrong.
-- A pipeline's own driver process (e.g. a Nextflow head process that only submits
-  jobs to the scheduler) is normally fine to run on a login node inside `screen`/
-  `tmux` - it isn't doing the compute itself, it's dispatching it. Confirm that's
-  actually true of the specific tool before assuming it.
+Login nodes are for file management, environment setup, light editing and job
+submission.
 
-## 2. Scope every filesystem operation - never scan cluster-wide
+- Anything that does real work (a tool on real data, multi-threaded processing,
+  more than a few seconds of CPU) goes through `srun`/`sbatch` (or the site's
+  equivalent), not bare SSH execution.
+- Cheap commands are fine directly: reading logs, `--version` checks,
+  `squeue`/`sacct`, `cat`/`tail` on small files.
+- If unsure which side of the line a command falls on, ask. "It should only
+  take a few seconds" is not a judgment to trust.
+- A pipeline's driver process (e.g. a Nextflow head job that only submits tasks)
+  is often run in `screen`/`tmux` on a login node. Some sites forbid it. Check
+  the site's policy first, and confirm the tool really only dispatches.
 
-A recursive scan or metadata-heavy operation over an unscoped path doesn't just
-take a while - on a parallel filesystem (Lustre/GPFS) it hammers the metadata
-server(s) that every other user's I/O also depends on.
+## 2. Scope every filesystem operation
 
-- Never run `find`, `grep -r`, or similar over a broad or unscoped path (`/`,
-  a top-level shared project/scratch mount). Confine every search to a specific,
-  already-known directory - the user's own project path, or one the user just gave.
-  If you don't know the right path, ask; don't widen the search to compensate.
-- Avoid `ls -l`/`ls -la` on directories with many entries - use plain `ls` if a
-  filename listing is all you need. `-l` forces a stat() per file (touching every
-  data server a striped file lives on), while a bare listing is metadata-only.
-- Avoid wildcard globs over large directories for the same reason - shell
-  expansion has to enumerate the whole directory first.
-- If a site provides a filesystem-aware alternative (e.g. Lustre's `lfs find`),
-  prefer it over generic `find` when doing anything broader than a single
-  known subdirectory.
-- Don't create large numbers of small files in one directory if avoidable -
-  this is a known way to put a parallel filesystem's metadata server under load
-  hard enough to affect the whole system, not just your own jobs.
+On a parallel filesystem, a recursive scan hits the metadata servers that
+everyone's I/O depends on.
 
-## 3. Throttle any job-status polling
+- Never run `find`, `grep -r` or similar over a broad path (`/`, a top-level
+  project or scratch mount). Search inside a known directory: the user's project
+  path, or one the user gave. If you don't know the path, ask.
+- Use plain `ls` for names. `ls -l` stats every file, so avoid it on large
+  directories.
+- Avoid wildcard globs over large directories; the shell enumerates them first.
+- Inside a large project directory, prefer the filesystem-aware search (e.g.
+  Lustre's `lfs find`). It makes a scoped search cheaper; it never licenses a
+  broad one.
+- Avoid creating many small files in one directory.
 
-`squeue`/`sacct`/equivalent hit the scheduler itself, which is also a shared
-resource - frequent polling degrades it for everyone submitting jobs, not just
-your own queries.
+## 3. Throttle job-status polling
 
-- Never poll job status faster than about once a minute, and prefer sparser
-  intervals for anything long-running - checking a multi-hour job every 30
-  seconds has no benefit over checking every few minutes.
-- Never run multiple concurrent polling loops against the same scheduler command.
-- Prefer a single `sacct`/`squeue` call per check over `watch <cmd>` when
-  scripting; if `watch` is genuinely needed interactively, keep the refresh
-  interval at 60s or slower and stop it once you're done.
+`squeue` queries the scheduler; `sacct` queries the accounting database, and the
+SLURM docs warn against calling it in loops.
 
-## 4. Ask where scratch/temp space is - never default to `/tmp` or guess
+- Poll no faster than about once a minute, less often for long jobs.
+- Run one polling loop at a time.
+- Scope each query (`squeue -u $USER`, `squeue -j <id>`, `sacct -j <id>`).
+- Prefer waiting on the scheduler (`sbatch --wait`, `--mail-type`) or the
+  pipeline's own poller over a `sleep` loop. If you use `watch`, keep it at
+  `-n 60` or slower and stop it when done.
 
-A cluster's `/tmp` on a shared login node is not the private, sandboxed `/tmp` of
-a single-user machine - other users on the same node can potentially see it, and
-it's often small, quota-limited, or node-local (silently gone if a job or session
-lands on a different node next time).
+## 4. Ask where scratch space is
 
-- Before creating any temporary file on a cluster, ask the user for the project's
-  designated scratch/temp path if you don't already know it for that host this
-  session - don't default to `/tmp`, don't guess at a plausible-looking path.
-- Once you have the answer for a given host in a session, reuse it for the rest
-  of that session on that host rather than asking again for every file.
-- Project-specific scratch paths (exact directories, env vars like a site's
-  scratch-space variable) belong in that project's own memory/notes once
-  established - this skill only covers the general rule to ask, not any
-  particular cluster's actual path.
+Scratch means throwaway or intermediate files. Job scripts, logs and final
+outputs belong in the project directory; no need to ask for those.
 
-## 5. Stay inside the project's own directories
+- On a login node or shared storage, ask for the project's scratch path before
+  creating a scratch file, unless you already know it for this host this
+  session. Do not default to `/tmp`: it is shared with other users on the node
+  and is often small or node-local.
+- Reuse the answer for the rest of the session on that host.
+- Inside a job, use the site's job-local temp directory (usually `$TMPDIR`) only
+  if it is set there. It is site-configured, may be small or memory-backed, and
+  disappears with the job. Check `echo $TMPDIR` and `df`, and copy results to
+  project storage before the job ends. If it is unset, ask.
+- Cluster-specific paths belong in the project's own notes, not here.
 
-Don't read, list, or otherwise wander into other users' or unrelated projects'
-paths on shared storage, even read-only and even out of debugging curiosity.
-If something requires looking outside the current project's known paths, say so
-and ask, rather than broadening scope on your own judgment.
+## 5. Stay inside the project's directories
 
-## 6. When the scheduler or site conventions are unknown, ask - don't assume SLURM
+Do not read or list other users' or unrelated projects' paths, even read-only.
+If the task needs one, say so and ask.
 
-Not every cluster uses SLURM. Job submission syntax, partition/queue names,
-accounting commands, and shared-filesystem type all vary by site. If a command
-fails because a tool/convention doesn't match what's actually installed, treat
-that as a signal to ask about the site's actual setup rather than trying nearby
-alternatives blind.
+## 6. Ask when the site is unknown; don't assume SLURM
 
-## 7. Check the scheduler's resource-to-billing ratio before requesting memory/CPUs
+Submission syntax, partition names, accounting commands and filesystem type vary
+by site. If a command fails because the tool is missing, ask about the site's
+setup instead of trying nearby alternatives.
 
-Many schedulers silently round a job's *allocated* (and billed) resources up from
-what you asked for, based on a fixed ratio between one resource and another (e.g.
-SLURM's `DefMemPerCPU`/`MaxMemPerCPU` forces CPU allocation to scale with requested
-memory, regardless of `--cpus-per-task`). Requesting far more of one resource than
-the job actually needs can silently multiply the billed cost many times over and
-starve the account's scheduling priority - without ever producing an error, since
-the job still runs fine on the oversized allocation it was never asked for.
+## 7. Check how memory and CPUs are allocated and billed
 
-This applies however the job gets submitted - a raw `sbatch`/`srun` script, a
-Nextflow/Snakemake/other pipeline's process-resource config, or any other
-submission mechanism - the scheduler applies the same ratio regardless of what
-submitted the job.
+Two partition settings can make a job cost far more than it asked for, with no
+error. SLURM examples; other schedulers have equivalents.
 
-- Before requesting memory (or any resource with a known conversion ratio) for a
-  job that will run many times or at scale, check the partition's actual ratio
-  (e.g. `scontrol show partition <name>` for `DefMemPerCPU`/`MaxMemPerCPU` on
-  SLURM) and size the request against it, not just against "enough headroom."
-- After a job runs at least once, verify what was actually allocated and used
-  against what was requested (e.g. SLURM's `scontrol show job` for
-  `ReqTRES` vs. `AllocTRES`, `sacct`/`sstat` for `MaxRSS`/`AveCPU` vs. requested
-  memory/CPUs) - a large gap between requested and allocated, or between
-  allocated and actually used, means the request is miscalibrated, not just
-  generous.
-- Don't default to a conservative-sounding round number (e.g. "80GB should be
-  plenty") without checking what that number actually costs on this specific
-  partition - the same request can be cheap on one partition and drastically
-  over-billed on another depending on its ratio.
-- If you find a job's resource request is multiplying its billed cost well above
-  what it needs, flag it and fix the request - this is a correctness issue (wasted
-  shared-allocation budget, degraded fairshare priority for the account), not
-  just an optimization.
+- **Allocation.** If a job requests more memory per CPU than `MaxMemPerCPU`,
+  SLURM raises its CPU count to fit, whatever `--cpus-per-task` said. A large
+  memory request for a single-threaded step can reserve many cores.
+  `DefMemPerCPU` is only the default for a job that requests no memory.
+- **Billing.** `TRESBillingWeights` set what each allocated unit costs. The total
+  feeds fair-share priority. It is computed from what was allocated, not used,
+  and does not change the allocation.
 
-## See also
+The same applies however the job is submitted: `sbatch`/`srun`, or a
+Nextflow/Snakemake resource config.
 
-Project-specific cluster details (which host, jump-host chains, exact scratch
-paths, pipeline-specific run scripts) belong in that project's own memory, not
-here - this skill is the portable, cluster-agnostic half of that knowledge.
+- Before a large or repeated job, read the partition limits
+  (`scontrol show partition <name>`, or `scontrol show config | grep MemPer` if
+  the partition sets none) and size the request against them. Do not pick a
+  round "plenty" number.
+- After a run, compare request, allocation and use from accounting. Finished jobs
+  disappear from `scontrol show job` and `sstat` only covers running ones:
+  `sacct -j <id> -o JobID,State,Elapsed,ReqMem,AllocTRES,TotalCPU,MaxRSS`.
+  Read `MaxRSS` from the step rows (`.batch`, `.0`); `-X` omits steps and
+  reports utilization as zero. CPU efficiency is `TotalCPU / (Elapsed * AllocCPUS)`.
+  If `sacct` returns nothing, accounting may be off; say so.
+- When a request is multiplying cost, fix it, but never below the observed
+  `MaxRSS` plus headroom: an undersized request is killed (exit 137, out of
+  memory). If the memory need and the CPU ratio conflict, pick a partition with a
+  better ratio or ask.
 
 ## Sources
 
@@ -145,4 +121,8 @@ here - this skill is the portable, cluster-agnostic half of that knowledge.
 - [HPC Etiquette - University of Surrey](https://docs.pages.surrey.ac.uk/research_computing/gettingstarted/etiquette.html)
 - [Best practices on Lustre parallel file systems - ETH Zurich](https://scicomp.ethz.ch/wiki/Best_practices_on_Lustre_parallel_file_systems)
 - [Lustre best practices - INCD](https://wiki.incd.pt/books/filesystem-user-guide/page/lustre-best-practices)
+- [slurm.conf: DefMemPerCPU, MaxMemPerCPU - SchedMD](https://slurm.schedmd.com/slurm.conf.html)
+- [Trackable resources and TRESBillingWeights - SchedMD](https://slurm.schedmd.com/tres.html)
+- [sbatch - SchedMD](https://slurm.schedmd.com/sbatch.html)
+- [sacct - SchedMD](https://slurm.schedmd.com/sacct.html)
 - [SLURM Best Practice Guide - NCC Spain](https://hpc-portal.eu/sites/default/files/content-document/ENG_BPG_SLURM_V3_NCC%20SPAIN%20.pdf)
