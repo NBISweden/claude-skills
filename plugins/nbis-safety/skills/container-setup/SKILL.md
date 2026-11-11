@@ -160,8 +160,13 @@ project paths.
 ## 4. Build the instructions
 
 - `AGENTS.md`: copy `../safe-setup/AGENTS-support.md` or
-  `../safe-setup/AGENTS-dev.md` and fill in the data directories, then adapt
-  these lines for a container:
+  `../safe-setup/AGENTS-dev.md` and fill in the
+  data directories: replace `{{DATA_DIRS}}` with the paths from question 3.
+  If there are none, replace the whole bullet that holds `{{DATA_DIRS}}`
+  with `- There are no data directories in this project.` (support
+  template) or delete that bullet (development template). No `{{...}}`
+  placeholder may be left in the file you show or write.
+  Then adapt these lines for a container:
   - There is no sandbox. Replace statements that rely on it with the
     container: commands run inside the container with whatever it can reach.
   - `!` at the Claude Code prompt runs inside the container, like Claude's

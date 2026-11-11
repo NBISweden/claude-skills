@@ -166,7 +166,11 @@ project paths there.
 ## 4. Build the instructions
 
 - `AGENTS.md`: copy `AGENTS-support.md` or `AGENTS-dev.md` and fill in the
-  data directories.
+  data directories: replace `{{DATA_DIRS}}` with the paths from question 3.
+  If there are none, replace the whole bullet that holds `{{DATA_DIRS}}`
+  with `- There are no data directories in this project.` (support
+  template) or delete that bullet (development template). No `{{...}}`
+  placeholder may be left in the file you show or write.
 - `CLAUDE.md`: make sure it contains the line `@AGENTS.md`, so Claude Code
   reads the same file as Copilot, Codex, Cursor and Gemini. A `CLAUDE.md` in
   this or any parent directory stops Claude Code from reading `AGENTS.md`
