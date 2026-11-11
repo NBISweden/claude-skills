@@ -13,7 +13,7 @@ installed on its own, so you only get what you choose.
 | `/nbis:deeper` | Turns a task into a deeper version of itself, not a bigger one: what a top professional would do, the raw material they would start from, their methods and tools, and what would show the result is right. Then rewrites your prompt. Runs only when you call it. |
 | `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
 | `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for a researcher's project or for NBIS's own open code. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
-| `/nbis-safety:hpc-cluster-safety` | Rules for working on a shared HPC cluster over SSH: no real compute on login nodes, scoped filesystem operations, job polling no faster than once a minute, asking for scratch space instead of using `/tmp`, and checking the memory-to-CPU billing ratio. Loads when Claude works on a cluster. |
+| `/nbis-safety:hpc-cluster-safety` | Rules for working on a shared HPC cluster, over SSH or on a login node: heavy work goes through the scheduler, searches stay inside the project, job polling is at most once a minute, scratch space is asked for, and memory requests are checked against the partition's CPU limits. Loads when Claude works on a cluster. |
 
 ## Install
 
