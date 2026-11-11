@@ -7,10 +7,13 @@ on the data.
 ## Data
 
 - Data directories: {{DATA_DIRS}}. Do not open, print, `head`, `zcat`,
-  summarise or search files there, or any sequencing, variant, expression or
-  sample file elsewhere (`.fastq`, `.bam`, `.cram`, `.vcf`, `.h5ad`, `.rds`,
-  sample sheets). If you need a file's format, ask me, or write a small
-  synthetic example.
+  summarise or search files there. If you need a file's format, ask me, or
+  write a small synthetic example.
+- Sequencing, variant, expression or sample files elsewhere (`.fastq`,
+  `.bam`, `.cram`, `.vcf`, `.h5ad`, `.rds`, sample sheets) may be real data
+  or synthetic test files. The first time you are about to open, print or
+  search one, tell me which file and why, and wait for my answer. Once I
+  have said a file or directory is fine, don't ask again for it.
 - Use synthetic data in tests and examples. Never copy real rows, sample
   IDs or file contents into code, tests, commit messages or chat.
 - If you come across what looks like personal data (names, personal
