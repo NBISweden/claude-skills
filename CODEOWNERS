@@ -6,4 +6,6 @@
 /plugins/nbis/                      @jhagberg @viklund
 /plugins/nbis-safety/               @jhagberg @viklund
 /.github/                           @jhagberg @viklund
-/plugins/nbis-safety/skills/hpc-cluster-safety/  @mahesh-panchal @jhagberg
+/plugins/nbis-safety/skills/hpc-cluster-safety/       @mahesh-panchal @jhagberg
+/plugins/nbis-safety/evals/hpc-cluster-safety-*/      @mahesh-panchal @jhagberg
+/plugins/nbis-safety/tests/*hpc*                      @mahesh-panchal @jhagberg
