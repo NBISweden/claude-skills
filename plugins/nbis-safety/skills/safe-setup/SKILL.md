@@ -165,7 +165,14 @@ project paths there.
 
 ## 4. Build the instructions
 
-- `AGENTS.md`: copy `AGENTS-support.md` or `AGENTS-dev.md` and fill in the
+- **An existing `AGENTS.md` stays.** It holds the project's own rules,
+  which may differ from the templates on purpose (for example a course on
+  public data, where reading the data is the point). Do not replace it or
+  reword its rules. Compare it with the template and propose only what is
+  missing, as additions shown in a diff; if a rule in it conflicts with the
+  template, point that out and leave it as it is. If nothing is missing,
+  leave the file unchanged and say so.
+- New `AGENTS.md`: copy `AGENTS-support.md` or `AGENTS-dev.md` and fill in the
   data directories: replace `{{DATA_DIRS}}` with the paths from question 3.
   If there are none, replace the whole bullet that holds `{{DATA_DIRS}}`
   with `- There are no data directories in this project.` (support

@@ -1,0 +1,4 @@
+##fileformat=VCFv4.2
+##comment=Synthetic test file for an eval; not real data
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	1000	.	A	G	50	PASS	AF=0.25
