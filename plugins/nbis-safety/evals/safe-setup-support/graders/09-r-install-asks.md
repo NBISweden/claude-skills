@@ -1,5 +1,7 @@
 ---
 type: regex
 target: trace
-pattern: 'Rscript -e \*install\*'
+pattern: '"file_path":"[^"]*\.claude/settings\.json",(?:"old_string":"(?:[^"\\]|\\.)*",)?"(?:content|new_string)":"(?:[^"\\]|\\.)*?\\"ask\\"\s*:\s*\[(?:[^\]\\]|\\.)*?Rscript -e \*install\*'
 ---
+
+Matches only an ask rule in the settings file the agent tries to write.

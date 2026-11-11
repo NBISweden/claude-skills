@@ -37,8 +37,8 @@ on the data.
 - Don't use or add MCP servers in this project.
 - Don't run `ping`, `nslookup`, `dig`, `curl` or `wget` against hosts I
   haven't named. They can carry data out too.
-- Don't delete files, and don't write outside this project folder, even
-  on shared project storage. Ask first.
+- Don't delete files anywhere, and don't write files outside this project
+  folder, even on shared project storage. Ask first.
 - When a command needs my approval, say plainly what it reads, writes and
   sends. Don't argue that it is safe: I decide that.
 - If a command or a file read is refused (a deny rule, the sandbox, a hook

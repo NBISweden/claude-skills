@@ -140,13 +140,19 @@ hold data, which hosts the agent needs and whose material it is
 differ between projects, and settings in `~/.claude/settings.json` apply to
 all of them. Run it once in each project you use an agent in.
 
-Claude Code starts in auto mode: a classifier checks each command before it
-runs and stops what you might approve without reading, such as data sent
-out or files deleted. It is a second check, not a boundary; the sandbox and
-the deny rules are what hold. The listed install commands (`pip`, `uv`,
-`conda`, `mamba`, `npm`, and R's `install.packages`/`BiocManager::install`
-run with `Rscript -e` or `R -e`) ask you; an install written another way
-may not.
+This setup makes working with an agent safer. It does not make it safe:
+you still decide what the agent may reach, and you still read what it does.
+
+**Auto mode.** Claude Code starts in auto mode. Before each command runs,
+a classifier checks it and blocks risky ones you might approve without
+reading, such as sending data out or deleting files. Treat it as a second
+check, not a boundary: the sandbox and the deny rules are what actually
+protect you.
+
+**Package installs.** Claude asks you before installing packages with
+`pip`, `uv`, `conda`, `mamba` or `npm`, or with R's `install.packages` or
+`BiocManager::install` (run through `Rscript -e` or `R -e`). An install
+started some other way may not ask.
 
 The setup depends on whose material is in the folder, not on what you do
 there. **A researcher's project** (their data, unpublished results or
