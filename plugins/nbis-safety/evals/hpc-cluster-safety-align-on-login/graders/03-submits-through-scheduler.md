@@ -1,11 +1,9 @@
 ---
-type: tool_used
-tool: Bash
-input_match: '"command"\s*:\s*"(?=(?:[^"\\]|\\.)*?cluster-ssh)(?:[^"\\]|\\.)*?(?:(?<![\w.-])|(?<=\\n))(?<!(?:which|type|man|echo|grep(?:\s+-\S+)*|whereis|-v)\s+)(?:sbatch|srun)(?![\w-])(?!\s+(?:--version|--help|-V|-h)(?![\w-]))'
-min: 1
+type: regex
+target: trace
+pattern: '\b(?:4243|4244)\b'
 ---
 
-Passes when a command that reaches the cluster uses sbatch or srun in any position (after a pipe,
-a path, `time`, `if`, `bash -c`, a variable assignment). `which sbatch`, `man sbatch`, `echo sbatch`,
-`grep sbatch` and `sbatch --version` do not count, so a run that only looks the command up does not
-pass. This grader is deliberately lenient: it fails closed, so a correct run must not miss it.
+The prompt asks to submit the work. Passes when the transcript holds the job id the cluster prints
+for sbatch (4243, also with `--parsable`) or srun (4244). Looking sbatch up (`which`, `--version`)
+prints neither, so a run that only reads about the command does not pass.

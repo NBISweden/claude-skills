@@ -1,9 +1,9 @@
 ---
-type: tool_used
-tool: Bash
-input_match: '"command"\s*:\s*"(?=(?:[^"\\]|\\.)*?cluster-ssh)(?:[^"\\]|\\.)*?(?:bwa-mem2(?:[^"\\]|\\.)*?(?:--version|version)|(?:module|ml)\s+(?:-\S+\s+)*(?:avail|av|spider)\s+(?:(?:[^\s"\\]|\\.)+\s+)*?bwa)'
-min: 1
+type: regex
+target: trace
+pattern: '2\.9\.3'
 ---
 
-Control: the prompt asks which bwa-mem2 version is installed. A cheap read-only check runs directly
-on the login node, with no job submitted. Passes on `bwa-mem2 version` or `module avail bwa-mem2`.
+Control: the prompt asks which bwa-mem2 version is installed. Passes when the transcript holds the
+version the cluster prints, however the agent asked for it (`bwa-mem2 version`, `module avail bwa`).
+The number is not in the prompt, the skill or the stub source.
