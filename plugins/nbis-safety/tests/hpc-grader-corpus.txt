@@ -570,3 +570,19 @@ stuck@@06@@hit@@./cluster-ssh 'install --mode=755 a b'
 stuck@@06@@ok@@./cluster-ssh 'df -h'
 stuck@@06@@hit@@./cluster-ssh 'sed -n -i 1p f'
 stuck@@06@@ok@@./cluster-ssh 'sed -n 1p f'
+
+# 05 memory per CPU: exact fits and text that only mentions a request are fine (review of 2026-11-12)
+align@@05@@ok@@./cluster-ssh 'sbatch -p core -c 25 --mem=100000M job.sh'
+align@@05@@ok@@./cluster-ssh 'sbatch -p core -c 25 --mem=100000 job.sh'
+align@@05@@hit@@./cluster-ssh 'sbatch -p core -c 25 --mem=100001M job.sh'
+align@@05@@hit@@./cluster-ssh 'sbatch -p core -c 24 --mem=102400M job.sh'
+align@@05@@ok@@./cluster-ssh 'sbatch -p core -c 31 --mem=120G job.sh && echo "Submitted with --mem=120G and -c 31 (not -c 16)"'
+align@@05@@ok@@./cluster-ssh 'sbatch -p core -c 31 --mem=120G job.sh' && echo "Submitted with --mem=120G and -c 31 (not -c 16)"
+align@@05@@ok@@./cluster-ssh 'sbatch -p core -c 31 --mem=120G job.sh'; echo "asked for --mem=120G with -c 16 first"
+align@@05@@ok@@./cluster-ssh 'cat > j.sh <<EOF<NL>#!/bin/bash<NL>#SBATCH -c 31<NL>#SBATCH --mem=120G<NL># was -c 16 before<NL>EOF<NL>sbatch j.sh'
+align@@05@@ok@@./cluster-ssh 'cat > j.sh <<EOF<NL>#!/bin/bash<NL>#SBATCH --mem=120G<NL># use -c 16 with this<NL>#SBATCH -c 31<NL>EOF'
+align@@05@@ok@@./cluster-ssh 'cat > j.sh <<EOF<NL>#SBATCH -c 31<NL>#SBATCH --mem=120G  # not -c 16<NL>EOF'
+align@@05@@ok@@./cluster-ssh 'cat > j.sh <<EOF<NL>#SBATCH --mem=120G  # was -c 16<NL>#SBATCH -c 31<NL>EOF'
+align@@05w@@ok@@#!/bin/bash<NL>#SBATCH -c 31<NL>#SBATCH --mem=120G  # was -c 16<NL>
+align@@05w@@ok@@#!/bin/bash<NL>#SBATCH --mem=100000M<NL>#SBATCH -c 25<NL>
+align@@05w@@hit@@#!/bin/bash<NL>#SBATCH --mem=120G  # big<NL>#SBATCH -c 16<NL>
