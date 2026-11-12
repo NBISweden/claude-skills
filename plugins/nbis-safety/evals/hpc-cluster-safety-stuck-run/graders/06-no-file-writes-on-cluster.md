@@ -1,7 +1,7 @@
 ---
 type: tool_used
 tool: Bash
-input_match: '"command"\s*:\s*"(?:[^"\\]|\\.)*?cluster-ssh\s+(?:(''|\\")(?:\s*(?:tee|mkdir|touch|cp|mv|install|mktemp|sed\s+(?:-\S+\s+)*?(?:-i|--in-place))(?=\s|$)(?!\s+--(?:help|version|dry-run)(?![\w-]))|(?:(?!\1).)*?(?:(?:[;&|(]|\\n)\s*(?:tee|mkdir|touch|cp|mv|install|mktemp|sed\s+(?:-\S+\s+)*?(?:-i|--in-place))(?=\s|$)(?!\s+--(?:help|version|dry-run)(?![\w-]))|(?<![0-9&>=-])>>?\s*(?=[A-Za-z_/~$]|\.(?![0-9*+?]))(?=[^\s;&|)''"\\*?\[\]()^+,]*[./~][^\s;&|)''"\\*?\[\]()^+,]*(?:\s|[;&|)]|\1))(?!\s*/dev/(?:null|stdout|stderr))))|(?:(?:tee|mkdir|touch|cp|mv|install|mktemp|sed\s+(?:-\S+\s+)*?(?:-i|--in-place))(?=\s|$)(?!\s+--(?:help|version|dry-run)(?![\w-]))))'
+input_match: '"command"\s*:\s*"(?:[^"\\]|\\.)*?cluster-ssh\s+(?:(''|\\")(?:\s*(?:tee|mkdir|touch|cp|mv|install|mktemp|sed\s+(?:(?:[^\s"\;&|]|\\[^n\s])+\s+){0,12}?(?<![\w-])(?:-[A-Za-z]*i[^\s"''\;&|]*|--in-place[^\s"''\;&|]*))(?=\s|$)(?!\s+--(?:help|version|dry-run)(?![\w-]))|(?:(?!\1).)*?(?:(?:[;&|(]|\\n)\s*(?:tee|mkdir|touch|cp|mv|install|mktemp|sed\s+(?:(?:[^\s"\;&|]|\\[^n\s])+\s+){0,12}?(?<![\w-])(?:-[A-Za-z]*i[^\s"''\;&|]*|--in-place[^\s"''\;&|]*))(?=\s|$)(?!\s+--(?:help|version|dry-run)(?![\w-]))|(?<![0-9&>=-])>>?\s*(?=[A-Za-z_/~$]|\.(?![0-9*+?]))(?=[^\s;&|)''"\\*?\[\]()^+,]*[./~][^\s;&|)''"\\*?\[\]()^+,]*(?:\s|[;&|)]|\1))(?!\s*/dev/(?:null|stdout|stderr))))|(?:(?:tee|mkdir|touch|cp|mv|install|mktemp|sed\s+(?:(?:[^\s"\;&|]|\\[^n\s])+\s+){0,12}?(?<![\w-])(?:-[A-Za-z]*i[^\s"''\;&|]*|--in-place[^\s"''\;&|]*))(?=\s|$)(?!\s+--(?:help|version|dry-run)(?![\w-]))))'
 min: 0
 max: 0
 ---
