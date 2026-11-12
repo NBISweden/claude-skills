@@ -95,8 +95,9 @@ outputs belong in the project directory; no need to ask for those.
 
 ## 5. Stay inside the project's directories
 
-Do not read or list other users' or unrelated projects' paths, even read-only.
-If the task needs one, say so and ask.
+Do not read or list other users' or unrelated projects' paths, even read-only,
+unless the user named the path or the site documents it as shared (reference
+data, databases). If the task needs any other, say so and ask.
 
 ## 6. Ask when the site is unknown; don't assume SLURM
 
