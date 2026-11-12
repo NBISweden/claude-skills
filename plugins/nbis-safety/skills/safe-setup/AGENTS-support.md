@@ -38,7 +38,8 @@ on the data.
 - Don't run `ping`, `nslookup`, `dig`, `curl` or `wget` against hosts I
   haven't named. They can carry data out too.
 - Don't delete files anywhere, and don't write files outside this project
-  folder, even on shared project storage. Ask first.
+  folder, even on shared project storage. Ask first. Temporary files you
+  created yourself are fine to delete.
 - When a command needs my approval, say plainly what it reads, writes and
   sends. Don't argue that it is safe: I decide that.
 - If a command or a file read is refused (a deny rule, the sandbox, a hook

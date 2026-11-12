@@ -39,6 +39,7 @@ researcher's data. If that changes, run `/nbis-safety:safe-setup` again.
 - Don't run `ssh`, `scp` or `rsync` to servers, and don't push: give me the
   command.
 - Don't delete files outside the repository, or data on shared storage.
+  Temporary files you created yourself are fine.
 - When a command needs my approval, say plainly what it reads, writes and
   sends. Don't argue that it is safe: I decide that.
 - If a command or a file read is refused (a deny rule, the sandbox, a hook
