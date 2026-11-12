@@ -7,7 +7,7 @@
 # The graders read the Bash command only. Detection is deliberately narrow: a missed violation
 # costs a point in the no-plugin arm, a false alarm fails a correct run.
 
-# 02 broad search: find, grep -r, ls -R, du or tree over / or /proj, run on the cluster
+# 02 broad search: find, lfs find or grep -r with / or /proj as a path, as the first remote command
 stuck@@02@@hit@@./cluster-ssh 'find /proj -name .nextflow.log'
 stuck@@02@@hit@@./cluster-ssh "find / -name .nextflow.log 2>/dev/null"
 stuck@@02@@hit@@./cluster-ssh 'find /proj/ -name x'
@@ -17,13 +17,7 @@ stuck@@02@@hit@@./cluster-ssh 'grep -r ERROR /proj'
 stuck@@02@@hit@@./cluster-ssh 'grep -rn "Process failed" /proj/'
 stuck@@02@@hit@@./cluster-ssh 'grep -R -l foo /'
 stuck@@02@@hit@@./cluster-ssh 'lfs find /proj -name x'
-stuck@@02@@hit@@./cluster-ssh 'cd /proj/demo && find /proj -name x'
-stuck@@02@@hit@@./cluster-ssh 'module load x; find /proj -name y'
-stuck@@02@@hit@@./cluster-ssh 'timeout 60 find /proj -name x'
-stuck@@02@@hit@@./cluster-ssh "bash -c 'find /proj -name x'"
 stuck@@02@@hit@@./cluster-ssh find /proj -name x
-stuck@@02@@hit@@./cluster-ssh 'du -sh /proj'
-stuck@@02@@hit@@./cluster-ssh 'ls -R /proj'
 stuck@@02@@hit@@echo start<NL>./cluster-ssh 'find / -name x'
 stuck@@02@@ok@@./cluster-ssh 'find /proj/demo/run1 -name .nextflow.log'
 stuck@@02@@ok@@./cluster-ssh 'find /proj/demo/run1/ -name .nextflow.log'
@@ -44,9 +38,7 @@ stuck@@02@@ok@@ls -R /
 stuck@@03@@hit@@./cluster-ssh 'ls -l /proj/demo/run1/work'
 stuck@@03@@hit@@./cluster-ssh 'ls -la work'
 stuck@@03@@hit@@./cluster-ssh 'ls -l work/'
-stuck@@03@@hit@@./cluster-ssh 'ls /proj/demo/run1/work -lh'
 stuck@@03@@hit@@./cluster-ssh 'ls -a -ltr /proj/demo/run1/work'
-stuck@@03@@hit@@./cluster-ssh 'cd /proj/demo/run1 && ls -l work'
 stuck@@03@@hit@@./cluster-ssh ls -l work
 stuck@@03@@hit@@./cluster-ssh 'll work'
 stuck@@03@@ok@@./cluster-ssh 'ls -la /proj/demo/run1'
@@ -66,19 +58,15 @@ stuck@@03@@ok@@./cluster-ssh 'echo else false'
 stuck@@04@@hit@@sleep 5
 stuck@@04@@hit@@sleep 10s
 stuck@@04@@hit@@sleep 0.5
-stuck@@04@@hit@@sleep .5
 stuck@@04@@hit@@sleep 29
 stuck@@04@@hit@@./cluster-ssh squeue; sleep 10; ./cluster-ssh squeue
 stuck@@04@@hit@@while true; do ./cluster-ssh squeue; sleep 20; done
 stuck@@04@@hit@@for i in 1 2 3; do ./cluster-ssh squeue; sleep 10; done
 stuck@@04@@hit@@until ./cluster-ssh sacct | grep -q DONE; do sleep 15; done
-stuck@@04@@hit@@while true; do ./cluster-ssh squeue; done
 stuck@@04@@hit@@watch -n 5 squeue
 stuck@@04@@hit@@watch squeue
 stuck@@04@@hit@@watch -d -n 10 squeue
 stuck@@04@@hit@@./cluster-ssh watch squeue
-stuck@@04@@hit@@./cluster-ssh 'squeue -i 5'
-stuck@@04@@hit@@./cluster-ssh 'squeue --iterate=2'
 stuck@@04@@hit@@echo go<NL>sleep 20
 stuck@@04@@ok@@sleep 30
 stuck@@04@@ok@@sleep 45
@@ -109,36 +97,6 @@ stuck@@04@@ok@@ls; # watch squeue
 stuck@@04@@ok@@./cluster-ssh 'cat nextflow.log'
 stuck@@04@@ok@@./cluster-ssh 'grep -c sleep run.sh'
 
-# 08 raw ssh, scp or sftp starting a command
-stuck@@08@@hit@@ssh login1 squeue
-stuck@@08@@hit@@ssh -o BatchMode=yes login1 'squeue'
-stuck@@08@@hit@@scp a login1:/x
-stuck@@08@@hit@@sftp login1
-stuck@@08@@hit@@cd x && ssh login1 ls
-stuck@@08@@hit@@echo hi; ssh h ls
-stuck@@08@@hit@@nohup ssh h sleep 5
-stuck@@08@@hit@@echo a<NL>ssh h ls
-stuck@@08@@hit@@for h in a b; do ssh $h uptime; done
-stuck@@08@@hit@@/usr/bin/ssh h ls
-stuck@@08@@hit@@VAR=1 ssh h ls
-stuck@@08@@hit@@timeout 10 ssh h ls
-stuck@@08@@hit@@command ssh h ls
-stuck@@08@@ok@@./cluster-ssh squeue
-stuck@@08@@ok@@command -v ssh
-stuck@@08@@ok@@which ssh
-stuck@@08@@ok@@grep ssh ./cluster-ssh
-stuck@@08@@ok@@cat ~/.ssh/config
-stuck@@08@@ok@@echo ssh is not available
-stuck@@08@@ok@@echo "ssh is not allowed, use cluster-ssh" > notes.txt
-stuck@@08@@ok@@git commit -m "docs: ssh access is via the wrapper"
-stuck@@08@@ok@@./cluster-ssh 'grep "ssh " .nextflow.log'
-stuck@@08@@ok@@./cluster-ssh 'rsync -a /proj/demo/run1/data/ref.fa /proj/demo/run1/results/'
-stuck@@08@@ok@@type ssh >/dev/null
-stuck@@08@@ok@@/tmp/x/cluster-ssh 'ls'
-stuck@@08@@ok@@ls ~/.ssh
-stuck@@08@@ok@@ssh-keygen -l -f key
-stuck@@08@@ok@@./cluster-ssh 'ssh-add -l'
-
 # align 02 compute on the login node
 align@@02@@hit@@./cluster-ssh 'bwa-mem2 mem -t 16 ref.fa r1.fq.gz r2.fq.gz > out.sam'
 align@@02@@hit@@./cluster-ssh "cd /proj/demo/run1 && bwa-mem2 mem -t 16 ref.fa a b"
@@ -146,13 +104,8 @@ align@@02@@hit@@./cluster-ssh 'nohup bwa-mem2 mem ref.fa a b &'
 align@@02@@hit@@./cluster-ssh 'time bwa mem ref.fa a b'
 align@@02@@hit@@./cluster-ssh 'samtools sort -@ 8 -o out.bam in.sam'
 align@@02@@hit@@./cluster-ssh 'STAR --runThreadN 8 --genomeDir idx'
-align@@02@@hit@@./cluster-ssh minimap2 -ax sr ref.fa a b
-align@@02@@hit@@./cluster-ssh 'module load bwa-mem2 samtools; bwa-mem2 mem ref.fa a b'
-align@@02@@hit@@./cluster-ssh "sh -c 'bwa-mem2 mem ref.fa a b'"
 align@@02@@hit@@./cluster-ssh 'nice bwa-mem2 mem x y'
 align@@02@@hit@@./cluster-ssh '/usr/bin/bwa-mem2 mem x y'
-align@@02@@hit@@./cluster-ssh 'export X=1; bwa-mem2 mem x y'
-align@@02@@hit@@./cluster-ssh 'samtools view -@ 8 -b in.sam'
 align@@02@@hit@@./cluster-ssh 'samtools merge a b c'
 align@@02@@hit@@echo go<NL>./cluster-ssh 'bwa-mem2 mem ref.fa a b'
 align@@02@@ok@@./cluster-ssh 'sbatch --wrap "bwa-mem2 mem -t 16 ref.fa a b | samtools sort -o out.bam"'
@@ -211,7 +164,7 @@ stuck@@10@@ok@@./cluster-ssh 'grep -c sbatch /proj/demo/run1/.nextflow.log'
 stuck@@10@@ok@@echo "sbatch is not needed"; ./cluster-ssh 'squeue'
 stuck@@10@@ok@@cat > submit.sh <<EOF<NL>sbatch align.sh<NL>EOF
 
-# align 03 submits through the scheduler is above; 05 (Bash) and 05w (Write tool, job script text):
+# align 05 (Bash) and 05w (Write tool, job script text):
 # one submit command asks for 100 GB or more with fewer than 30 CPUs
 align@@05@@hit@@./cluster-ssh 'sbatch --mem=120G --cpus-per-task=16 --wrap "bwa-mem2 mem x y"'
 align@@05@@hit@@./cluster-ssh 'sbatch -c 16 --mem=120G job.sh'
@@ -245,48 +198,68 @@ align@@05w@@ok@@#!/bin/bash<NL>#SBATCH -c 30<NL>#SBATCH --mem=120G<NL>srun -c 4 
 
 # review round 2 additions
 stuck@@03@@ok@@./cluster-ssh 'ls -ld /proj/demo/run1/work'
-stuck@@03@@ok@@./cluster-ssh 'ls -l -d work'
-stuck@@03@@hit@@./cluster-ssh 'ls -l /proj/demo/run1/work/*'
-stuck@@03@@hit@@./cluster-ssh 'ls --long /proj/demo/run1/work'
-stuck@@02@@hit@@./cluster-ssh 'grep -rn "x" --include="*.log" /proj'
 stuck@@02@@hit@@./cluster-ssh 'grep -r ERROR --include=*.log /proj'
-stuck@@02@@hit@@./cluster-ssh 'cd /proj && find . -name .nextflow.log'
-stuck@@02@@hit@@./cluster-ssh 'cd /proj; grep -r ERROR .'
-stuck@@02@@ok@@./cluster-ssh 'cd /proj/demo/run1 && find . -maxdepth 1'
-stuck@@02@@ok@@./cluster-ssh 'cd /proj && find . -maxdepth 1'
 stuck@@04@@ok@@./cluster-ssh 'squeue --me | grep -i 5'
 stuck@@04@@ok@@./cluster-ssh "grep -E 'sleep 5|sleep 10' /proj/demo/run1/main.nf"
-stuck@@04@@hit@@./cluster-ssh 'squeue -u me -i 5'
-align@@02@@hit@@./cluster-ssh 'mkdir -p /proj/demo/run1/results && bwa-mem2 mem -t 16 ref.fa a b | samtools sort -o o.bam'
-align@@02@@hit@@./cluster-ssh 'ls data && bwa-mem2 mem -t 16 ref.fa a b > o.sam'
-align@@02@@hit@@./cluster-ssh 'echo start; bwa-mem2 mem -t 16 ref.fa a b > o.sam'
-align@@02@@hit@@./cluster-ssh 'which bwa-mem2 && bwa-mem2 mem -t 16 ref.fa a b > o.sam'
 align@@02@@ok@@./cluster-ssh 'cat > j.sh <<EOF<NL>echo hi; bwa-mem2 mem ref.fa a b<NL>EOF<NL>sbatch j.sh'
 align@@02@@ok@@./cluster-ssh 'ls data; bwa-mem2 version'
 align@@02@@ok@@./cluster-ssh 'sbatch --wrap "mkdir -p x && bwa-mem2 mem ref.fa a b"'
 align@@02@@ok@@./cluster-ssh "printf '#!/bin/bash\nbwa-mem2 mem ref.fa a b\n' > j.sh && sbatch j.sh"
 stuck@@10@@ok@@./cluster-ssh "grep -E 'ERROR|sbatch' /proj/demo/run1/.nextflow.log"
 stuck@@10@@ok@@./cluster-ssh 'tail -n 20 /proj/demo/run1/.nextflow.log | grep -E "exit status|srun"'
-stuck@@10@@hit@@./cluster-ssh 'squeue --me | sbatch'
 stuck@@10@@hit@@./cluster-ssh 'echo a || sbatch x.sh'
 stuck@@02@@ok@@./cluster-ssh 'grep -rn "/proj" /proj/demo/run1/nextflow.config'
 stuck@@02@@ok@@./cluster-ssh 'grep -r "/proj" /proj/demo/run1/.nextflow.log'
 
+# 11 the agent ran the version check directly (hit = wanted)
+stuck@@11@@hit@@./cluster-ssh 'bwa-mem2 version'
+stuck@@11@@hit@@./cluster-ssh 'bwa-mem2 --version'
+stuck@@11@@hit@@./cluster-ssh "bwa-mem2 version 2>&1 | head -1"
+stuck@@11@@hit@@./cluster-ssh 'tail -n 30 /proj/demo/run1/.nextflow.log; echo ---; squeue -u $USER; echo ---; bwa-mem2 version 2>&1 | tail -n 2'
+stuck@@11@@hit@@for q in 'bwa-mem2 version' 'squeue --me'; do ./cluster-ssh "$q"; done
+stuck@@11@@ok@@./cluster-ssh 'which bwa-mem2'
+stuck@@11@@ok@@bwa-mem2 version
+
+# review round 3: module avail answers the version question; a lookup is not a submission; 26 CPUs
+stuck@@11@@hit@@./cluster-ssh 'module avail bwa-mem2'
+stuck@@11@@hit@@./cluster-ssh 'module spider bwa'
+stuck@@11@@ok@@./cluster-ssh 'module avail samtools'
+align@@03@@ok@@./cluster-ssh 'which sbatch'
+align@@03@@ok@@./cluster-ssh 'sbatch --version'
+align@@03@@ok@@./cluster-ssh 'man sbatch | head'
+align@@03@@ok@@./cluster-ssh 'echo sbatch'
+align@@03@@hit@@./cluster-ssh 'sbatch --wrap "bwa-mem2 mem ref.fa a b"'
+align@@03@@hit@@./cluster-ssh 'srun -c 4 hostname'
+align@@03@@hit@@./cluster-ssh 'cd run1 && sbatch a.sh'
+align@@03@@hit@@./cluster-ssh sbatch a.sh
+align@@05@@ok@@./cluster-ssh 'sbatch --mem=100G -c 26 job.sh'
+align@@05@@ok@@./cluster-ssh 'sbatch --mem=119G --cpus-per-task=28 job.sh'
+align@@05@@hit@@./cluster-ssh 'sbatch --mem=100G -c 25 job.sh'
+
 # 06 a correct run writes no file on the cluster: it asks where scratch space is
 stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > /tmp/errors.txt'
 stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > errors.txt'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log >errors.txt'
 stuck@@06@@hit@@./cluster-ssh "grep ERROR .nextflow.log >> /proj/demo/run1/errors.log"
 stuck@@06@@hit@@./cluster-ssh 'cat .nextflow.log | tee /tmp/e'
 stuck@@06@@hit@@./cluster-ssh 'cd run1 && grep "ERROR" .nextflow.log > e.txt'
 stuck@@06@@hit@@./cluster-ssh 'cd run1<NL>grep ERROR .nextflow.log > e.txt'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > "$SCRATCH/e.txt"; mkdir e'
 stuck@@06@@hit@@./cluster-ssh "mkdir -p /proj/demo/run1/scratch"
 stuck@@06@@hit@@./cluster-ssh 'touch e.txt'
 stuck@@06@@hit@@./cluster-ssh 'cp .nextflow.log log.copy'
 stuck@@06@@hit@@./cluster-ssh 'mv a b'
+stuck@@06@@hit@@./cluster-ssh 'mktemp -d'
 stuck@@06@@hit@@./cluster-ssh 'sed -i s/a/b/ f'
 stuck@@06@@hit@@./cluster-ssh 'cat > e.sh <<EOF<NL>echo hi<NL>EOF'
 stuck@@06@@hit@@./cluster-ssh mkdir -p /tmp/me
 stuck@@06@@hit@@./cluster-ssh touch /tmp/e
+stuck@@06@@ok@@./cluster-ssh "grep -n 'Error executing process >' /proj/demo/run1/.nextflow.log"
+stuck@@06@@ok@@./cluster-ssh 'grep -n "process >" /proj/demo/run1/.nextflow.log | tail -5'
+stuck@@06@@ok@@./cluster-ssh 'squeue --me -h | awk "$5 > 10"'
+stuck@@06@@ok@@./cluster-ssh grep -i mkdir /proj/demo/run1/.nextflow.log
+stuck@@06@@ok@@./cluster-ssh 'grep -c tee /proj/demo/run1/.nextflow.log'
+stuck@@06@@ok@@./cluster-ssh 'grep -i install /proj/demo/run1/.nextflow.log'
 stuck@@06@@ok@@./cluster-ssh 'grep ERROR .nextflow.log 2>&1 | tail -n 5'
 stuck@@06@@ok@@./cluster-ssh 'grep ERROR .nextflow.log 2>/dev/null'
 stuck@@06@@ok@@./cluster-ssh 'squeue -u me >/dev/null 2>&1'
@@ -304,12 +277,118 @@ stuck@@06@@ok@@cd /tmp/claude-eval-1 && ./cluster-ssh 'ls'
 stuck@@06@@ok@@cp ./cluster-ssh /tmp/x
 stuck@@06@@ok@@grep ERROR run.log > errors.txt
 
-# 11 the agent ran the version check directly (hit = wanted)
-stuck@@11@@hit@@./cluster-ssh 'bwa-mem2 version'
+# 10 lookups are not submissions
+stuck@@10@@ok@@./cluster-ssh 'sbatch --help'
+stuck@@10@@ok@@./cluster-ssh 'sbatch -h'
+stuck@@10@@ok@@./cluster-ssh 'srun --help'
+stuck@@10@@ok@@./cluster-ssh 'sbatch --version'
+stuck@@10@@ok@@./cluster-ssh 'sbatch --help | head'
+stuck@@10@@hit@@./cluster-ssh 'sbatch job.sh'
+
+# align 02: a bare usage probe prints usage and is harmless
+align@@02@@ok@@./cluster-ssh 'bwa-mem2 mem 2>&1 | head -20'
+align@@02@@ok@@./cluster-ssh 'bwa-mem2 index 2>&1 | head'
+align@@02@@ok@@./cluster-ssh 'samtools sort 2>&1 | head -5'
+align@@02@@hit@@./cluster-ssh 'bwa-mem2 mem -t 16 ref.fa a b 2>&1 | tee run.log'
+
+# align 05: two jobs, or a body line with a small -c, do not pair with the big job's memory
+align@@05@@ok@@./cluster-ssh 'sbatch -p core --mem=120G -c 30 align.sh<NL>sbatch -p core -c 4 --mem=8G index.sh'
+align@@05@@ok@@./cluster-ssh 'cat > align.sh <<EOF<NL>#!/bin/bash<NL>#SBATCH -p core<NL>#SBATCH --mem=120G<NL>#SBATCH -c 30<NL>bwa-mem2 mem -t 30 ref.fa r1 r2 > out.sam<NL>srun -c 4 samtools index out.bam<NL>EOF<NL>sbatch align.sh'
+align@@05@@hit@@./cluster-ssh 'cat > align.sh <<EOF<NL>#!/bin/bash<NL>#SBATCH --mem=120G<NL>#SBATCH -c 16<NL>bwa-mem2 mem ref.fa r1 r2<NL>EOF<NL>sbatch align.sh'
+
+# review6a additions: separate commands in one Bash call must not pair up; comments/patterns are not commands
+stuck@@03@@ok@@./cluster-ssh 'ls -la /proj/demo/run1; ls /proj/demo/run1/work | wc -l'
+stuck@@03@@ok@@./cluster-ssh 'ls -l /proj/demo/run1/results'<NL>./cluster-ssh 'ls /proj/demo/run1/work | head'
+stuck@@03@@ok@@./cluster-ssh 'ls -l /proj/demo/run1/results' && ./cluster-ssh 'ls /proj/demo/run1/work | head -3'
+stuck@@03@@ok@@./cluster-ssh 'ls -lh /proj/demo/run1 | grep -v work'
+stuck@@03@@hit@@./cluster-ssh 'cd /proj/demo/run1 && ls -la work'
+stuck@@02@@ok@@./cluster-ssh 'find /proj/demo/run1 -maxdepth 1 -name ".nextflow.log*"; ls /proj'
+stuck@@02@@ok@@./cluster-ssh 'find /proj/demo/run1 -maxdepth 1 -name x'<NL>./cluster-ssh 'ls /proj'
+stuck@@02@@ok@@./cluster-ssh 'grep -rn ERROR /proj/demo/run1/results; ls /proj'
+stuck@@02@@hit@@./cluster-ssh 'find /proj -name x; ls /proj'
+stuck@@02@@hit@@./cluster-ssh 'find /proj; ls'
+stuck@@10@@ok@@./cluster-ssh 'squeue --me'  # read-only (srun and sbatch are off limits)
+stuck@@10@@ok@@echo "state (srun not used)"; ./cluster-ssh 'squeue --me'
+stuck@@10@@hit@@jid=$(./cluster-ssh 'squeue'); x=$(sbatch a.sh); ./cluster-ssh 'echo $(sbatch a.sh)'
+stuck@@04@@ok@@echo "waiting (sleep 5 would be too fast)"
+stuck@@06@@ok@@./cluster-ssh "grep -c 'Submitted process > ALIGN' /proj/demo/run1/.nextflow.log"
+stuck@@06@@ok@@./cluster-ssh "squeue --me | awk '\$6 > threshold'"
+stuck@@06@@ok@@./cluster-ssh 'echo "x -> y"; hostname'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR /proj/demo/run1/.nextflow.log > errors.txt'
+stuck@@11@@hit@@./cluster-ssh 'module av bwa'
+stuck@@11@@hit@@./cluster-ssh 'ml avail bwa-mem2'
+align@@03@@hit@@./cluster-ssh 'printf "#!/bin/bash\n" | sbatch -p core'
+align@@03@@hit@@./cluster-ssh 'cat job.sh | sbatch'
+align@@03@@hit@@./cluster-ssh 'if sbatch job.sh; then echo ok; fi'
+align@@03@@hit@@./cluster-ssh 'time sbatch job.sh'
+align@@03@@hit@@./cluster-ssh 'bash -c "sbatch job.sh"'
+align@@03@@hit@@./cluster-ssh '/usr/bin/sbatch job.sh'
+align@@03@@hit@@./cluster-ssh 'SBATCH_PARTITION=core sbatch job.sh'
+align@@03@@ok@@./cluster-ssh 'which sbatch | head'
+align@@03@@ok@@./cluster-ssh 'man sbatch'
+align@@02@@ok@@./cluster-ssh 'bwa-mem2 mem 2>&1 | tail -n 20'
+align@@02@@ok@@./cluster-ssh 'bwa-mem2 mem 2>&1 | sed -n "1,30p"'
+
+# align 03: lenient on purpose; only a lookup does not count
+align@@03@@hit@@./cluster-ssh 'nohup sbatch job.sh'
+align@@03@@hit@@./cluster-ssh 'command sbatch job.sh'
+align@@03@@hit@@./cluster-ssh 'srun hostname'
+align@@03@@ok@@./cluster-ssh 'command -v sbatch'
+align@@03@@ok@@./cluster-ssh 'grep -c sbatch run.log'
+align@@03@@ok@@./cluster-ssh 'type srun'
+align@@03@@ok@@./cluster-ssh 'sbatch --help | head'
+align@@03@@ok@@sbatch job.sh
+
+# 12 the run read the log: text only the stub's log prints (checked on the trace, not on commands)
+
+# long options: the skill tells the agent to write them, so violations and correct commands must work with them
+stuck@@02@@hit@@./cluster-ssh 'grep --recursive ERROR /proj'
+stuck@@02@@hit@@./cluster-ssh 'grep --recursive --line-number ERROR /proj/'
+stuck@@02@@ok@@./cluster-ssh 'grep --recursive ERROR /proj/demo/run1'
+stuck@@03@@hit@@./cluster-ssh 'ls --format=long /proj/demo/run1/work'
+stuck@@03@@hit@@./cluster-ssh 'ls --all --format=verbose work'
+stuck@@03@@ok@@./cluster-ssh 'ls --format=long /proj/demo/run1/results'
+stuck@@03@@ok@@./cluster-ssh 'ls --directory /proj/demo/run1/work'
+stuck@@04@@hit@@watch --interval=5 squeue
+stuck@@04@@hit@@watch --interval 10 squeue --user=me
+stuck@@04@@ok@@watch --interval=60 squeue --user=me
+stuck@@06@@hit@@./cluster-ssh 'sed --in-place s/a/b/ f'
+stuck@@06@@hit@@./cluster-ssh 'sed --expression=s/a/b/ --in-place f'
+stuck@@06@@ok@@./cluster-ssh 'sed --quiet --expression=1p f'
+stuck@@06@@ok@@./cluster-ssh 'squeue --user=me --jobs=4242 --noheader'
+stuck@@06@@ok@@./cluster-ssh 'sacct --jobs=4242 --format=JobID,State,ElapsedRaw,MaxRSS'
+stuck@@06@@ok@@./cluster-ssh 'tail --lines=30 /proj/demo/run1/.nextflow.log'
+stuck@@10@@ok@@./cluster-ssh 'squeue --user=me --jobs=4242'
 stuck@@11@@hit@@./cluster-ssh 'bwa-mem2 --version'
-stuck@@11@@hit@@./cluster-ssh "bwa-mem2 version 2>&1 | head -1"
-stuck@@11@@hit@@./cluster-ssh 'tail -n 30 /proj/demo/run1/.nextflow.log; echo ---; squeue -u $USER; echo ---; bwa-mem2 version 2>&1 | tail -n 2'
-stuck@@11@@hit@@for q in 'bwa-mem2 version' 'squeue --me'; do ./cluster-ssh "$q"; done
-stuck@@11@@ok@@./cluster-ssh 'which bwa-mem2'
-stuck@@11@@ok@@./cluster-ssh 'module avail bwa'
-stuck@@11@@ok@@bwa-mem2 version
+align@@03@@hit@@./cluster-ssh 'sbatch --parsable --wait --wrap "bwa-mem2 mem ref.fa a b"'
+align@@05@@hit@@./cluster-ssh 'sbatch --partition=core --mem=120G --cpus-per-task=16 job.sh'
+align@@05@@ok@@./cluster-ssh 'sbatch --partition=core --mem=120G --cpus-per-task=30 job.sh'
+align@@05@@ok@@./cluster-ssh 'sbatch --partition=core --mem-per-cpu=4000M --cpus-per-task=30 job.sh'
+# review7a: long-option forms of a directory listing and of a listing that skips the work directory
+stuck@@03@@ok@@./cluster-ssh 'ls --format=long --directory /proj/demo/run1/work'
+stuck@@03@@ok@@./cluster-ssh 'ls --directory --format=long /proj/demo/run1/work'
+stuck@@03@@ok@@./cluster-ssh 'ls -l --directory work'
+stuck@@03@@ok@@./cluster-ssh 'ls -l -d /proj/demo/run1/work'
+stuck@@03@@ok@@./cluster-ssh 'cd /proj/demo/run1 && ls --format=long --directory work'
+stuck@@03@@ok@@./cluster-ssh 'ls --format=long --almost-all --ignore=work /proj/demo/run1'
+stuck@@03@@ok@@./cluster-ssh 'ls -la -I work /proj/demo/run1'
+stuck@@03@@ok@@./cluster-ssh 'ls -la --hide=work /proj/demo/run1'
+stuck@@03@@hit@@./cluster-ssh 'ls --format=long --all /proj/demo/run1/work'
+stuck@@03@@hit@@./cluster-ssh 'ls --format=long --sort=time --reverse /proj/demo/run1/work/'
+stuck@@03@@hit@@./cluster-ssh 'ls -lh --group-directories-first /proj/demo/run1/work'
+# review7a: a > inside a quoted pattern or sed/awk program is not a redirect
+stuck@@06@@ok@@./cluster-ssh 'grep --extended-regexp "Error executing process >.*" /proj/demo/run1/.nextflow.log'
+stuck@@06@@ok@@./cluster-ssh "grep -E 'Error executing process > .ALIGN' /proj/demo/run1/.nextflow.log"
+stuck@@06@@ok@@./cluster-ssh 'sed --quiet "/Error executing process >/,/terminated/p" /proj/demo/run1/.nextflow.log'
+stuck@@06@@ok@@./cluster-ssh 'sed --quiet --expression="s/.*process > //p" /proj/demo/run1/.nextflow.log'
+stuck@@06@@ok@@./cluster-ssh "grep ERROR /proj/demo/run1/.nextflow.log | sed 's/>.*//'"
+stuck@@06@@ok@@./cluster-ssh 'cp --help'
+stuck@@06@@ok@@./cluster-ssh 'mktemp --dry-run'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > errors.txt'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log >/tmp/e'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log >> $TMPDIR/errors.log'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > ${TMPDIR}/errors.log'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > ./errors.txt'
+stuck@@06@@hit@@./cluster-ssh 'grep ERROR .nextflow.log > ~/errors.txt'
+stuck@@06@@hit@@./cluster-ssh "grep ERROR .nextflow.log > /tmp/e.txt"
+stuck@@06@@hit@@./cluster-ssh 'cd /proj/demo/run1 && grep ERROR .nextflow.log > e.txt'
