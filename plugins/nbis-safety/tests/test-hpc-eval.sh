@@ -5,7 +5,10 @@
 #     them, with a description field that holds every trigger word;
 #  2. the cluster-ssh stub answers by command word, never runs what it is given,
 #     works in a read-only directory and reports the job as finished once its
-#     file is old enough;
+#     file is old enough (more than two minutes). Looking a command up (which,
+#     command -v, --version, man) submits nothing. The words "error exit" in
+#     the log are joined in the stub (sed 's/@KIND@/error exit/') so that reading
+#     the file does not show what a run must read in the log;
 #  3. the stuck-run and align-on-login cases ship identical copies of the stub and scaffold script.
 #
 # When an eval grader fails after a model upgrade (CI only prints "Bash called 2x (expected 0..0)"):

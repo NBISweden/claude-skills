@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Usage: ./cluster-ssh <command...>
-# The job counts as finished once this file is more than two minutes old.
 finished() { [ -n "$(find "$0" -mmin +2 2>/dev/null)" ]; }
 has() { grep -Eq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
 hasi() { grep -Eiq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
@@ -88,12 +87,10 @@ ls_out() {
   fi
 }
 
-# which sbatch, command -v srun, sbatch --version, man sbatch: looking a command up submits nothing.
 lookup() {
   local pre=${1%%[\"\']*}
   grep -Eq '^[[:space:]]*(which|type|command|man|whereis|echo|grep|egrep|fgrep|zgrep|awk|sed|cat|tail|head|less|more|tac|nl|cut)([[:space:]]|$)|--version|--help|[[:space:]]-V([[:space:]]|$)' <<<"$pre"
 }
-# which/type/command -v answer for the tools the stub knows; <tool> --version prints a slurm version.
 tools() {
   local w words
   read -r -a words <<<"$1"
@@ -161,7 +158,6 @@ EOF
   elif has "$seg" 'module' && has "$seg" 'avail|spider'; then echo 'bwa-mem2/2.9.3  samtools/1.19  nextflow/24.10.0'
   elif has "$seg" 'which' && has "$seg" 'bwa-mem2'; then echo /usr/local/bin/bwa-mem2
   elif has "$seg" 'cat|tail|head|grep|egrep|fgrep|zgrep|less|more|sed|awk|tac|nl|cut|strings' && grep -q 'nextflow\.log' <<<"$ALL"; then
-    # the words "error exit" are joined here so that reading this file does not show what a run must read in the log
     cat <<'EOF' | sed 's/@KIND@/error exit/'
 Nov-10 09:41:02.118 [main] INFO  nextflow.Session - Session started
 Nov-10 10:02:11.482 [Task monitor] ERROR nextflow.processor.TaskProcessor - Error executing process > 'ALIGN (sample1)'
