@@ -1,16 +1,18 @@
 ---
 name: hpc-cluster-safety
-description: Safety and etiquette rules for working on a shared HPC cluster (login nodes, shared filesystems, job schedulers like SLURM/PBS), whether Claude reaches it over SSH or runs directly on a login node. Use whenever running commands on a cluster - running a bioinformatics tool, submitting or checking jobs, debugging a failed pipeline, searching for files, or any file/data work on a login node - to avoid degrading a shared resource for other users. Not for a laptop, workstation or other machine that only you use.
+description: Safety and etiquette rules for working on a shared HPC cluster (login nodes, shared filesystems, job schedulers like SLURM/PBS), whether Claude reaches it over SSH or runs directly on a login node. Use whenever running commands on a cluster - running a bioinformatics tool, submitting or checking jobs, debugging a failed pipeline, searching for files, or any file/data work on a login node - or sizing memory and CPU requests in a job script or pipeline config for a cluster. Not for work that only runs on a laptop, workstation or other machine that only you use.
 ---
 
 # HPC Cluster Safety
 
 A login node and its shared filesystem (Lustre/GPFS/etc.) are multi-tenant.
 Every rule below exists because the action degrades service for every other
-user, not only your own session.
+user, not only your own session. Examples are SLURM; adapt them only once the
+site's scheduler is known (§6).
 
-If a rule says to ask and the user is away, do the safe part, leave the rest
-undone, and report what is waiting on an answer. Do not guess.
+If a rule says to ask and nobody can answer (the user is away, or the run is
+headless), do only the steps that need no answer, stop, and list the open
+questions. Do not substitute a default.
 
 ## 1. Run real compute through the scheduler
 
@@ -18,8 +20,8 @@ Login nodes are for file management, environment setup, light editing and job
 submission.
 
 - Anything that does real work (a tool on real data, multi-threaded processing,
-  more than a few seconds of CPU) goes through `srun`/`sbatch` (or the site's
-  equivalent), not bare SSH execution.
+  large copies or compression, more than a few seconds of CPU) goes through
+  `srun`/`sbatch` (or the site's equivalent), not bare SSH execution.
 - Cheap commands are fine directly: reading logs, `--version` checks,
   `squeue`/`sacct`, `cat`/`tail` on small files.
 - If unsure which side of the line a command falls on, ask. "It should only
@@ -27,15 +29,19 @@ submission.
 - A pipeline's driver process (e.g. a Nextflow head job that only submits tasks)
   is often run in `screen`/`tmux` on a login node. Some sites forbid it. Check
   the site's policy first, and confirm the tool really only dispatches.
+- Some sites bar AI agents from login nodes altogether (TACC: AI-assisted
+  workloads on compute nodes only). If the site's policy says so, tell the user
+  before doing anything else and work from an interactive compute allocation.
 
 ## 2. Scope every filesystem operation
 
 On a parallel filesystem, a recursive scan hits the metadata servers that
 everyone's I/O depends on.
 
-- Never run `find`, `grep -r` or similar over a broad path (`/`, a top-level
-  project or scratch mount). Search inside a known directory: the user's project
-  path, or one the user gave. If you don't know the path, ask.
+- Never run `find`, `du`, `ls -R`, `grep -r` or similar over a broad path (`/`, a
+  top-level project or scratch mount) or a very large directory. Search inside a
+  known directory: the user's project path, or one the user gave. If you don't
+  know the path, ask.
 - Use plain `ls` for names. `ls -l` stats every file, so avoid it on large
   directories.
 - Avoid wildcard globs over large directories; the shell enumerates them first.
@@ -46,15 +52,21 @@ everyone's I/O depends on.
 
 ## 3. Throttle job-status polling
 
-`squeue` queries the scheduler; `sacct` queries the accounting database, and the
-SLURM docs warn against calling it in loops.
+`squeue` queries the scheduler (slurmctld); `sacct` queries the accounting
+database (slurmdbd). The SLURM docs warn against running either from loops.
 
-- Poll no faster than about once a minute, less often for long jobs.
+- Poll no faster than about once a minute, less often for long jobs. Use
+  `squeue` for live state and `sacct` for finished jobs.
 - Run one polling loop at a time.
 - Scope each query (`squeue -u $USER`, `squeue -j <id>`, `sacct -j <id>`).
-- Prefer waiting on the scheduler (`sbatch --wait`, `--mail-type`) or the
-  pipeline's own poller over a `sleep` loop. If you use `watch`, keep it at
+- Prefer `sbatch --parsable --wait` or the pipeline's own poller over a `sleep`
+  loop. A long wait can outlast your tool's timeout: run it in the background,
+  and never resubmit a job just because the wait timed out. Its exit code is not
+  proof of success: check `State` with `sacct`. `--mail-type` only emails the
+  user; it does not let you wait. If you use `watch`, keep it at
   `-n 60` or slower and stop it when done.
+- Submit many similar tasks as one job array with a concurrency cap
+  (`--array=1-N%M`), not as a loop of `sbatch` calls.
 
 ## 4. Ask where scratch space is
 
@@ -66,10 +78,14 @@ outputs belong in the project directory; no need to ask for those.
   session. Do not default to `/tmp`: it is shared with other users on the node
   and is often small or node-local.
 - Reuse the answer for the rest of the session on that host.
-- Inside a job, use the site's job-local temp directory (usually `$TMPDIR`) only
-  if it is set there. It is site-configured, may be small or memory-backed, and
-  disappears with the job. Check `echo $TMPDIR` and `df`, and copy results to
-  project storage before the job ends. If it is unset, ask.
+- Inside a job, use a job-local temp directory only if the site documents one
+  (often `$TMPDIR`, or a private per-job `/tmp`). SLURM sets `TMPDIR=/tmp` when
+  nothing else does and can inherit your shell's value, so a set variable proves
+  nothing. If the site documents none, ask before submitting. The job script
+  checks `df "$TMPDIR"`, fails loudly if `$TMPDIR` is `/tmp` and the site has not
+  said that is private to the job, and copies results to project storage before
+  the end. Job-local space may be small or memory-backed and disappears with the
+  job.
 - Cluster-specific paths belong in the project's own notes, not here.
 
 ## 5. Stay inside the project's directories
@@ -85,44 +101,56 @@ setup instead of trying nearby alternatives.
 
 ## 7. Check how memory and CPUs are allocated and billed
 
-Two partition settings can make a job cost far more than it asked for, with no
-error. SLURM examples; other schedulers have equivalents.
+Two settings can make a job cost far more than it asked for, with no error.
 
-- **Allocation.** If a job requests more memory per CPU than `MaxMemPerCPU`,
-  SLURM raises its CPU count to fit, whatever `--cpus-per-task` said. A large
-  memory request for a single-threaded step can reserve many cores.
-  `DefMemPerCPU` is only the default for a job that requests no memory.
-- **Billing.** `TRESBillingWeights` set what each allocated unit costs. The total
-  feeds fair-share priority. It is computed from what was allocated, not used,
-  and does not change the allocation.
+- **Allocation.** If a job asks for more memory than the partition's
+  `MaxMemPerCPU` allows for its CPUs (`--mem-per-cpu` above the limit, or `--mem`
+  above CPUs times the limit), SLURM tries to raise the CPU count to fit,
+  whatever `--cpus-per-task` said: `--mem=120G` at `MaxMemPerCPU=4000` becomes
+  31 CPUs. This is best effort: the job may be rejected instead. `DefMemPerCPU`
+  is only the default for a job that asks for no memory. Where the limit is
+  `MaxMemPerNode`, an over-limit job is not widened: it is rejected at submit if
+  `EnforcePartLimits` is `ALL` or `ANY`, and otherwise (the default) accepted and
+  left pending. Do not wait on it.
+- **Billing.** The partition's `TRESBillingWeights` set what each allocated unit
+  costs. The total feeds fair-share priority and any billing limits, and is
+  computed from what was allocated, not what was used.
 
 The same applies however the job is submitted: `sbatch`/`srun`, or a
 Nextflow/Snakemake resource config.
 
-- Before a large or repeated job, read the partition limits
-  (`scontrol show partition <name>`, or `scontrol show config | grep MemPer` if
-  the partition sets none) and size the request against them. Do not pick a
-  round "plenty" number.
+- Before a large or repeated job, read the limits: `scontrol show partition
+  <name>` and `scontrol show config | grep MemPer`. A partition that prints
+  `MaxMemPerNode=UNLIMITED` sets no limit of its own; the cluster-wide limit from
+  `scontrol show config` still applies, if it is set. Size the request against
+  them; do not pick a round "plenty" number. When trimming an oversized request,
+  keep headroom above `MaxRSS`.
 - After a run, compare request, allocation and use from accounting. Finished jobs
-  disappear from `scontrol show job` and `sstat` only covers running ones:
-  `sacct -j <id> -o JobID,State,Elapsed,ReqMem,AllocTRES,TotalCPU,MaxRSS`.
+  leave `scontrol show job` after `MinJobAge` (300 s by default), and `sstat`
+  only covers running ones:
+  `sacct -j <id> -o JobID,State,ElapsedRaw,ReqMem,AllocCPUS,AllocTRES,TotalCPU,MaxRSS`.
   Read `MaxRSS` from the step rows (`.batch`, `.0`); `-X` omits steps and
-  reports utilization as zero. CPU efficiency is `TotalCPU / (Elapsed * AllocCPUS)`.
-  If `sacct` returns nothing, accounting may be off; say so.
-- When a request is multiplying cost, fix it, but never below the observed
-  `MaxRSS` plus headroom: an undersized request is killed (exit 137, out of
-  memory). If the memory need and the CPU ratio conflict, pick a partition with a
-  better ratio or ask.
+  reports utilization as zero. CPU efficiency is
+  `TotalCPU / (ElapsedRaw * AllocCPUS)`, with `TotalCPU` (HH:MM:SS) converted to
+  seconds. If `sacct` returns nothing, accounting may be off; say so.
+- An undersized request can be killed. Where SLURM detects it, `sacct` shows
+  `OUT_OF_MEMORY` with `ExitCode 0:125`, and tools report 137 (SIGKILL). After
+  such a kill `MaxRSS` understates the need (it is sampled), so raise the request
+  above the failed one, not just above `MaxRSS`. If the memory need and the CPU
+  ratio conflict, name a partition with a better ratio and ask before using it.
 
 ## Sources
 
 - [TACC Good Conduct Guide](https://docs.tacc.utexas.edu/basics/conduct/)
 - [Login nodes vs. compute nodes - Iowa Biostat HPC](https://iowabiostat.github.io/hpc/4.html)
 - [HPC Etiquette - University of Surrey](https://docs.pages.surrey.ac.uk/research_computing/gettingstarted/etiquette.html)
-- [Best practices on Lustre parallel file systems - ETH Zurich](https://scicomp.ethz.ch/wiki/Best_practices_on_Lustre_parallel_file_systems)
 - [Lustre best practices - INCD](https://wiki.incd.pt/books/filesystem-user-guide/page/lustre-best-practices)
-- [slurm.conf: DefMemPerCPU, MaxMemPerCPU - SchedMD](https://slurm.schedmd.com/slurm.conf.html)
+- [slurm.conf: DefMemPerCPU, MaxMemPerCPU, MinJobAge, EnforcePartLimits - SchedMD](https://slurm.schedmd.com/slurm.conf.html)
 - [Trackable resources and TRESBillingWeights - SchedMD](https://slurm.schedmd.com/tres.html)
 - [sbatch - SchedMD](https://slurm.schedmd.com/sbatch.html)
 - [sacct - SchedMD](https://slurm.schedmd.com/sacct.html)
+- [sstat - SchedMD](https://slurm.schedmd.com/sstat.html)
+- [squeue - SchedMD](https://slurm.schedmd.com/squeue.html)
+- [scontrol - SchedMD](https://slurm.schedmd.com/scontrol.html)
+- [Slurm source: `task.c` sets TMPDIR, `slurm_protocol_defs.h` defines the 0:125 out-of-memory exit status](https://github.com/SchedMD/slurm)
 - [SLURM Best Practice Guide - NCC Spain](https://hpc-portal.eu/sites/default/files/content-document/ENG_BPG_SLURM_V3_NCC%20SPAIN%20.pdf)
