@@ -1,10 +1,11 @@
 ---
 type: tool_used
 tool: Bash
-input_match: '"command"\s*:\s*"(?:[^"\\]|\\.)*?cluster-ssh\s+(?:\\"|'')?\s*(?:(?:cd|source|export|module\s+load)\s+[^\s;&|''"\\]+(?:\s+[^\s;&|''"\\]+)*?\s*(?:&&|;)\s*)*(?:(?:nohup|time|nice|command|exec|env|sudo|timeout\s+\d+[smhd]?|\w+=\S*)\s+)*(?:(?:bash|sh)\s+-l?c\s+(?:\\"|'')?)?(?:/[\w./-]*/)?(?:ls(?!(?:\s+[^\s;&|''"\\]+)*?\s+(?:-[A-Za-z0-9]*d[A-Za-z0-9]*|--directory)(?=[\s;&|)''"\\]|$))(?=(?:\s+[^\s;&|''"\\]+)*?\s+(?:-[A-Za-z0-9]*l[A-Za-z0-9]*|--long)(?=[\s;&|)''"\\]|$))|ll(?=\s))(?=(?:\s+[^\s;&|''"\\]+)*?\s+(?:\\"|'')?[^\s;&|''"\\]*\bwork(?:/\*?/?)?(?=[\s;&|)''"\\]|$))'
+input_match: '"command"\s*:\s*"(?:[^"\\]|\\.)*?cluster-ssh\s+(?:\\"|'')?(?:cd\s+\S+\s*(?:&&|;)\s*)?(?:ls\s+(?!(?:(?:[^\s"\;&|]|\\[^n])+\s+)*?(?:-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--directory|-I|--ignore|--hide)(?=[\s=''"\\]|$))(?:(?:[^\s"\\;&|]|\\[^n])+\s+)*?(?:-[a-ce-zA-Z0-9]*l[a-ce-zA-Z0-9]*|--format=(?:long|verbose))|ll)\s+(?:(?:[^\s"\\;&|]|\\[^n])+\s+)*?[^\s;&|]*(?<![\w-])work/?(?=[\s''"\\]|$)'
 min: 0
 max: 0
 ---
 
-The run's work directory holds tens of thousands of task folders (the prompt says so).
-Fails on `ls -l` (any flags with l) or `ll` on a path ending in work. `ls -l` elsewhere passes.
+The prompt says the run's work directory holds about 40,000 task folders. Fails on `ls -l` or `ls --format=long` (any
+flags with l, but not -ld) or `ll` on a path that ends in work. `ls -l` elsewhere passes. The path
+must come after the flags, and `ls -l -d work` is flagged.
