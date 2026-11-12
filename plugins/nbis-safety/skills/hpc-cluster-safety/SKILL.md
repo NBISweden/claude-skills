@@ -10,6 +10,9 @@ Every rule below exists because the action degrades service for every other
 user, not only your own session. Examples are SLURM; adapt them only once the
 site's scheduler is known (§6).
 
+Write commands with long options (`--dry-run`, not `-n`) so the user can read
+and review them; use a short option only when there is no long one.
+
 If a rule says to ask and nobody can answer (the user is away, or the run is
 headless), do only the steps that need no answer, stop, and list the open
 questions. Do not substitute a default.
@@ -38,12 +41,12 @@ submission.
 On a parallel filesystem, a recursive scan hits the metadata servers that
 everyone's I/O depends on.
 
-- Never run `find`, `du`, `ls -R`, `grep -r` or similar over a broad path (`/`, a
-  top-level project or scratch mount) or a very large directory. Search inside a
-  known directory: the user's project path, or one the user gave. If you don't
-  know the path, ask.
-- Use plain `ls` for names. `ls -l` stats every file, so avoid it on large
-  directories.
+- Never run `find`, `du`, `ls --recursive`, `grep --recursive` or similar over
+  a broad path (`/`, a top-level project or scratch mount) or a very large
+  directory. Search inside a known directory: the user's project path, or one
+  the user gave. If you don't know the path, ask.
+- Use plain `ls` for names. `ls --format=long` stats every file, so avoid it on
+  large directories.
 - Avoid wildcard globs over large directories; the shell enumerates them first.
 - Inside a large project directory, prefer the filesystem-aware search (e.g.
   Lustre's `lfs find`). It makes a scoped search cheaper; it never licenses a
@@ -58,13 +61,14 @@ database (slurmdbd). The SLURM docs warn against running either from loops.
 - Poll no faster than about once a minute, less often for long jobs. Use
   `squeue` for live state and `sacct` for finished jobs.
 - Run one polling loop at a time.
-- Scope each query (`squeue -u $USER`, `squeue -j <id>`, `sacct -j <id>`).
+- Scope each query (`squeue --user=$USER`, `squeue --jobs=<id>`,
+  `sacct --jobs=<id>`).
 - Prefer `sbatch --parsable --wait` or the pipeline's own poller over a `sleep`
   loop. A long wait can outlast your tool's timeout: run it in the background,
   and never resubmit a job just because the wait timed out. Its exit code is not
   proof of success: check `State` with `sacct`. `--mail-type` only emails the
   user; it does not let you wait. If you use `watch`, keep it at
-  `-n 60` or slower and stop it when done.
+  `--interval=60` or slower and stop it when done.
 - Submit many similar tasks as one job array with a concurrency cap
   (`--array=1-N%M`), not as a loop of `sbatch` calls.
 
@@ -128,9 +132,9 @@ Nextflow/Snakemake resource config.
 - After a run, compare request, allocation and use from accounting. Finished jobs
   leave `scontrol show job` after `MinJobAge` (300 s by default), and `sstat`
   only covers running ones:
-  `sacct -j <id> -o JobID,State,ElapsedRaw,ReqMem,AllocCPUS,AllocTRES,TotalCPU,MaxRSS`.
-  Read `MaxRSS` from the step rows (`.batch`, `.0`); `-X` omits steps and
-  reports utilization as zero. CPU efficiency is
+  `sacct --jobs=<id> --format=JobID,State,ElapsedRaw,ReqMem,AllocCPUS,AllocTRES,TotalCPU,MaxRSS`.
+  Read `MaxRSS` from the step rows (`.batch`, `.0`); `--allocations` omits steps
+  and reports utilization as zero. CPU efficiency is
   `TotalCPU / (ElapsedRaw * AllocCPUS)`, with `TotalCPU` (HH:MM:SS) converted to
   seconds. If `sacct` returns nothing, accounting may be off; say so.
 - An undersized request can be killed. Where SLURM detects it, `sacct` shows
@@ -145,21 +149,21 @@ Find out what a transfer or deletion will touch before it touches anything. A
 wrong directory or glob, or a secret or personal data in the file list, cannot
 be undone once the data has left or is gone.
 
-- Copying or syncing: use `rsync`, and run it first with `-n` (`--dry-run`) and
-  `-i` (`--itemize-changes`). `rsync --list-only SRC` lists a source. `cp` and
+- Copying or syncing: use `rsync`, and run it first with `--dry-run` and
+  `--itemize-changes`. `rsync --list-only SRC` lists a source. `cp` and
   `scp` have no dry run. Use the same arguments, filters and trailing slashes
   as the real command.
 - Deleting: `rm` has no dry run. Expand the exact path or glob first
-  (`ls -d <glob>`, or a scoped `find <dir> -name <pattern> -print`, as
+  (`ls --directory <glob>`, or a scoped `find <dir> -name <pattern> -print`, as
   in §2) and delete only what you read, never an unexpanded variable or glob.
-  `rsync --delete` and `--remove-source-files` need `-n` first; the rsync
+  `rsync --delete` and `--remove-source-files` need `--dry-run` first; the rsync
   manual calls `--delete` dangerous.
 - Read the list before running. Does it match the request, with nothing from
   outside the intended directory? Does it hold secrets or personal data (`.env`,
   keys, `*.pem`, tokens, credentials, `.git`, `.ssh`, sample sheets, data
   directories)? Exclude them (`--exclude`, or `--files-from` a list you checked)
   and dry-run again. Do not open the files to check. If unsure, stop and ask.
-- Then run the same command without `-n`. Any change to the options needs
+- Then run the same command without `--dry-run`. Any change to the options needs
   a new dry run.
 - If nobody can answer, or the project's own rules (`AGENTS.md`) forbid running
   transfers or deletions, stop after the dry run and give the user the listing
