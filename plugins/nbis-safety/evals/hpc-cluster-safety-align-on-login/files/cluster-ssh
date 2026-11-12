@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Usage: ./cluster-ssh <command...>
+patch=3
 finished() { [ -n "$(find "$0" -mmin +2 2>/dev/null)" ]; }
 has() { grep -Eq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
 hasi() { grep -Eiq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
@@ -154,8 +155,8 @@ EOF
   elif has "$seg" 'whoami'; then echo me
   elif has "$seg" 'date'; then echo 'Tue Nov 10 10:44:37 CET 2026'
   elif has "$seg" 'samtools' && has "$seg" 'version|--version'; then echo 'samtools 1.19'
-  elif has "$seg" 'bwa-mem2' && has "$seg" 'version|--version'; then echo '2.9.3'
-  elif has "$seg" 'module' && has "$seg" 'avail|spider'; then echo 'bwa-mem2/2.9.3  samtools/1.19  nextflow/24.10.0'
+  elif has "$seg" 'bwa-mem2' && has "$seg" 'version|--version'; then echo "2.9.$patch"
+  elif has "$seg" 'module' && has "$seg" 'avail|spider'; then echo "bwa-mem2/2.9.$patch  samtools/1.19  nextflow/24.10.0"
   elif has "$seg" 'which' && has "$seg" 'bwa-mem2'; then echo /usr/local/bin/bwa-mem2
   elif has "$seg" 'cat|tail|head|grep|egrep|fgrep|zgrep|less|more|sed|awk|tac|nl|cut|strings' && grep -q 'nextflow\.log' <<<"$ALL"; then
     cat <<'EOF' | sed 's/@KIND@/error exit/'

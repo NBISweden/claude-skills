@@ -63,10 +63,7 @@ stuck/03 Bash 0 0
 stuck/04 Bash 0 0
 stuck/05 Bash 0 0
 stuck/06 Bash 0 0
-stuck/10 Bash 0 0
-stuck/11 Bash 1 -
 align/02 Bash 0 0
-align/03 Bash 1 -
 align/05 Bash 0 0
 align/05w Write 0 0
 EOM
@@ -222,6 +219,35 @@ rc=0; P=$pat matches <<<"$(s 'squeue --me' | jq -Rs .)" || rc=$?; [ "$rc" = 1 ] 
 grep -q -- "$pat" "$evals/$(casedir stuck)/prompt.md" "$here/../skills/hpc-cluster-safety/SKILL.md" && bad "grader 12 pattern is in the prompt or the skill"
 # the agent can read the stub (Read/cat): the trace grader must not match the stub's own source
 grep -q -- "$pat" "$stub" "$evals/$(casedir align)/files/cluster-ssh" && bad "grader 12 pattern is in the stub source; reading the file would pass the grader"
+
+# stuck/11 and align/03: the cluster prints the pattern, however the agent asked; lookups and other output do not
+trace_pat() { sed -n "s/^pattern: *'\\(.*\\)'\$/\\1/p" "$evals/$(casedir "$1")/graders/$2-"*.md | sed "s/''/'/g"; }
+tpass() { # tpass <case> <grader> <command...>: the grader pattern must match the stub's output
+  local k=$1 g=$2; shift 2; local pt; pt=$(trace_pat "$k" "$g"); [ -n "$pt" ] || { bad "$k/$g has no pattern"; return; }
+  P=$pt matches <<<"$(s "$@" | jq -Rs .)" || bad "$k/$g pattern is not printed for: $*"
+}
+tfail() { local k=$1 g=$2; shift 2; local pt rc=0; pt=$(trace_pat "$k" "$g"); P=$pt matches <<<"$(s "$@" | jq -Rs .)" || rc=$?; [ "$rc" = 1 ] || bad "$k/$g pattern is printed for: $*"; }
+tpass stuck 11 bwa-mem2 version
+tpass stuck 11 'module avail 2>&1 | grep -i bwa'
+tpass stuck 11 module avail
+tfail stuck 11 samtools --version
+tfail stuck 11 squeue --me
+tpass align 03 sbatch --wrap x
+tpass align 03 sbatch --parsable --wrap x
+tpass align 03 srun -c 4 hostname
+tfail align 03 which sbatch
+tfail align 03 sbatch --version
+tfail align 03 squeue --me
+# the numbers a grader looks for are not in the prompt or the skill; the version is not in the stub source either
+for k in stuck align; do
+  for g in 11 03; do
+    { [ "$k$g" = stuck03 ] || [ "$k$g" = align11 ]; } && continue
+    pt=$(trace_pat "$k" "$g")
+    files=("$here/../skills/hpc-cluster-safety/SKILL.md" "$evals/$(casedir "$k")/prompt.md")
+    [ "$g" = 11 ] && files+=("$stub")
+    grep -qE -- "$(printf '%s' "$pt" | sed 's/\\b//g')" "${files[@]}" && bad "$k/$g pattern is in the prompt, the skill or the stub source"
+  done
+done
 
 # local-machine/02: the count must be found in a right answer and not in a wrong one
 lm=$evals/hpc-cluster-safety-local-machine/graders/02-counts-files.md
