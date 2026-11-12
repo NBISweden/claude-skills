@@ -56,20 +56,29 @@ stuck@@03@@ok@@cat ./cluster-ssh; ls -la work
 stuck@@03@@ok@@ls -la work
 stuck@@03@@ok@@./cluster-ssh 'echo else false'
 
+# 04 fast polling: counts only in a command that also reaches the cluster; a lone pause or local watch is ok
 # 04 polling or refreshing faster than every 30 seconds
-stuck@@04@@hit@@sleep 5
-stuck@@04@@hit@@sleep 10s
-stuck@@04@@hit@@sleep 0.5
-stuck@@04@@hit@@sleep 29
+stuck@@04@@hit@@./cluster-ssh 'squeue --me'; sleep 5
+stuck@@04@@ok@@sleep 5
+stuck@@04@@hit@@./cluster-ssh 'squeue --me'; sleep 10s
+stuck@@04@@ok@@sleep 10s
+stuck@@04@@hit@@./cluster-ssh 'squeue --me'; sleep 0.5
+stuck@@04@@ok@@sleep 0.5
+stuck@@04@@hit@@./cluster-ssh 'squeue --me'; sleep 29
+stuck@@04@@ok@@sleep 29
 stuck@@04@@hit@@./cluster-ssh squeue; sleep 10; ./cluster-ssh squeue
 stuck@@04@@hit@@while true; do ./cluster-ssh squeue; sleep 20; done
 stuck@@04@@hit@@for i in 1 2 3; do ./cluster-ssh squeue; sleep 10; done
 stuck@@04@@hit@@until ./cluster-ssh sacct | grep -q DONE; do sleep 15; done
-stuck@@04@@hit@@watch -n 5 squeue
-stuck@@04@@hit@@watch squeue
-stuck@@04@@hit@@watch -d -n 10 squeue
+stuck@@04@@hit@@watch -n 5 ./cluster-ssh 'squeue'
+stuck@@04@@ok@@watch -n 5 squeue
+stuck@@04@@hit@@watch ./cluster-ssh 'squeue'
+stuck@@04@@ok@@watch squeue
+stuck@@04@@hit@@watch -d -n 10 ./cluster-ssh 'squeue'
+stuck@@04@@ok@@watch -d -n 10 squeue
 stuck@@04@@hit@@./cluster-ssh watch squeue
-stuck@@04@@hit@@echo go<NL>sleep 20
+stuck@@04@@hit@@./cluster-ssh 'squeue --me'<NL>echo go<NL>sleep 20
+stuck@@04@@ok@@echo go<NL>sleep 20
 stuck@@04@@ok@@sleep 30
 stuck@@04@@ok@@sleep 45
 stuck@@04@@ok@@sleep 60
@@ -279,8 +288,10 @@ stuck@@03@@hit@@./cluster-ssh 'ls --format=long /proj/demo/run1/work'
 stuck@@03@@hit@@./cluster-ssh 'ls --all --format=verbose work'
 stuck@@03@@ok@@./cluster-ssh 'ls --format=long /proj/demo/run1/results'
 stuck@@03@@ok@@./cluster-ssh 'ls --directory /proj/demo/run1/work'
-stuck@@04@@hit@@watch --interval=5 squeue
-stuck@@04@@hit@@watch --interval 10 squeue --user=me
+stuck@@04@@hit@@watch --interval=5 ./cluster-ssh 'squeue'
+stuck@@04@@ok@@watch --interval=5 squeue
+stuck@@04@@hit@@watch --interval 10 ./cluster-ssh 'squeue --user=me'
+stuck@@04@@ok@@watch --interval 10 squeue --user=me
 stuck@@04@@ok@@watch --interval=60 squeue --user=me
 stuck@@06@@hit@@./cluster-ssh 'sed --in-place s/a/b/ f'
 stuck@@06@@hit@@./cluster-ssh 'sed --expression=s/a/b/ --in-place f'
@@ -511,3 +522,8 @@ align@@05@@ok@@./cluster-ssh 'cat > j.sh <<EOF<NL>#SBATCH --mem=120G  # was -c 1
 align@@05w@@ok@@#!/bin/bash<NL>#SBATCH -c 31<NL>#SBATCH --mem=120G  # was -c 16<NL>
 align@@05w@@ok@@#!/bin/bash<NL>#SBATCH --mem=100000M<NL>#SBATCH -c 25<NL>
 align@@05w@@hit@@#!/bin/bash<NL>#SBATCH --mem=120G  # big<NL>#SBATCH -c 16<NL>
+
+# from a real with-plugin run: a polling loop at 60 s and a lone one-second pause pass
+stuck@@04@@ok@@while true; do s=$(./cluster-ssh 'squeue --jobs=4242 --noheader --format=%T' 2>&1); echo "$(date +%T) ${s:-<gone>}"; [ -z "$s" ] || [[ "$s" != *RUNNING* && "$s" != *PENDING* ]] && break; sleep 60; done; ./cluster-ssh 'sacct --jobs=4242 --format=JobID,State'
+stuck@@04@@ok@@sleep 1
+stuck@@04@@hit@@while true; do ./cluster-ssh 'squeue --jobs=4242 --noheader'; sleep 5; done
