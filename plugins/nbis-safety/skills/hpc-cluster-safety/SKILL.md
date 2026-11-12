@@ -1,6 +1,6 @@
 ---
 name: hpc-cluster-safety
-description: Safety and etiquette rules for working on a shared HPC cluster (login nodes, shared filesystems, job schedulers like SLURM/PBS), whether Claude reaches it over SSH or runs directly on a login node. Use whenever running commands on a cluster - running a bioinformatics tool, submitting or checking jobs, debugging a failed pipeline, searching for files, or any file/data work on a login node - or sizing memory and CPU requests in a job script or pipeline config for a cluster. Not for work that only runs on a laptop, workstation or other machine that only you use.
+description: Safety and etiquette rules for working on a shared HPC cluster (login nodes, shared filesystems, job schedulers like SLURM/PBS), whether Claude reaches it over SSH or runs directly on a login node. Use whenever running commands on a cluster - running a bioinformatics tool, submitting or checking jobs, debugging a failed pipeline, searching for files, copying, transferring or deleting data, or any file/data work on a login node - or sizing memory and CPU requests in a job script or pipeline config for a cluster. Not for work that only runs on a laptop, workstation or other machine that only you use.
 ---
 
 # HPC Cluster Safety
@@ -139,6 +139,34 @@ Nextflow/Snakemake resource config.
   above the failed one, not just above `MaxRSS`. If the memory need and the CPU
   ratio conflict, name a partition with a better ratio and ask before using it.
 
+## 8. Dry-run before copying or deleting data
+
+Find out what a transfer or deletion will touch before it touches anything. A
+wrong directory or glob, or a secret or personal data in the file list, cannot
+be undone once the data has left or is gone.
+
+- Copying or syncing: use `rsync`, and run it first with `-n` (`--dry-run`) and
+  `-i` (`--itemize-changes`). `rsync --list-only SRC` lists a source. `cp` and
+  `scp` have no dry run. Use the same arguments, filters and trailing slashes
+  as the real command.
+- Deleting: `rm` has no dry run. Expand the exact path or glob first
+  (`ls -d <glob>`, or a scoped `find <dir> -name <pattern> -print`, as
+  in §2) and delete only what you read, never an unexpanded variable or glob.
+  `rsync --delete` and `--remove-source-files` need `-n` first; the rsync
+  manual calls `--delete` dangerous.
+- Read the list before running. Does it match the request, with nothing from
+  outside the intended directory? Does it hold secrets or personal data (`.env`,
+  keys, `*.pem`, tokens, credentials, `.git`, `.ssh`, sample sheets, data
+  directories)? Exclude them (`--exclude`, or `--files-from` a list you checked)
+  and dry-run again. Do not open the files to check. If unsure, stop and ask.
+- Then run the same command without `-n`. Any change to the options needs
+  a new dry run.
+- If nobody can answer, or the project's own rules (`AGENTS.md`) forbid running
+  transfers or deletions, stop after the dry run and give the user the listing
+  and the command.
+- Large transfers and deletions go through the scheduler or the site's
+  data-transfer node (§1).
+
 ## Sources
 
 - [TACC Good Conduct Guide](https://docs.tacc.utexas.edu/basics/conduct/)
@@ -151,6 +179,9 @@ Nextflow/Snakemake resource config.
 - [sacct - SchedMD](https://slurm.schedmd.com/sacct.html)
 - [sstat - SchedMD](https://slurm.schedmd.com/sstat.html)
 - [squeue - SchedMD](https://slurm.schedmd.com/squeue.html)
+- [rsync manual: --dry-run, --itemize-changes, --list-only, --delete](https://download.samba.org/pub/rsync/rsync.1)
+- [scp manual: no dry-run option](https://man.openbsd.org/scp)
+- [GNU rm and cp: no dry-run option](https://www.gnu.org/software/coreutils/manual/html_node/rm-invocation.html)
 - [scontrol - SchedMD](https://slurm.schedmd.com/scontrol.html)
 - [Slurm source: `task.c` sets TMPDIR, `slurm_protocol_defs.h` defines the 0:125 out-of-memory exit status](https://github.com/SchedMD/slurm)
 - [SLURM Best Practice Guide - NCC Spain](https://hpc-portal.eu/sites/default/files/content-document/ENG_BPG_SLURM_V3_NCC%20SPAIN%20.pdf)
