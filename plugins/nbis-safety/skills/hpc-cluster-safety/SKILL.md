@@ -8,7 +8,8 @@ description: Safety and etiquette rules for working on a shared HPC cluster (log
 A login node and its shared filesystem (Lustre/GPFS/etc.) are multi-tenant.
 Every rule below exists because the action degrades service for every other
 user, not only your own session. Examples are SLURM; adapt them only once the
-site's scheduler is known (§6).
+site's scheduler is known (§6). If the project's own rules (`AGENTS.md`) are
+stricter than this skill, they win.
 
 Write commands with long options (`--dry-run`, not `-n`) so the user can read
 and review them; use a short option only when there is no long one.
@@ -109,10 +110,11 @@ Two settings can make a job cost far more than it asked for, with no error.
 
 - **Allocation.** If a job asks for more memory than the partition's
   `MaxMemPerCPU` allows for its CPUs (`--mem-per-cpu` above the limit, or `--mem`
-  above CPUs times the limit), SLURM tries to raise the CPU count to fit,
-  whatever `--cpus-per-task` said: `--mem=120G` at `MaxMemPerCPU=4000` becomes
-  31 CPUs. This is best effort: the job may be rejected instead. `DefMemPerCPU`
-  is only the default for a job that asks for no memory. Where the limit is
+  above CPUs times the limit), SLURM tries to raise the CPU count to fit (for
+  `--mem-per-cpu` it multiplies `--cpus-per-task`): `--mem=120G` at
+  `MaxMemPerCPU=4000` becomes 31 CPUs. This is best effort: the job may be
+  rejected instead. `DefMemPerCPU` is only the default for a job that asks for
+  no memory. Where the limit is
   `MaxMemPerNode`, an over-limit job is not widened: it is rejected at submit if
   `EnforcePartLimits` is `ALL` or `ANY`, and otherwise (the default) accepted and
   left pending. Do not wait on it.
@@ -135,8 +137,9 @@ Nextflow/Snakemake resource config.
   `sacct --jobs=<id> --format=JobID,State,ElapsedRaw,ReqMem,AllocCPUS,AllocTRES,TotalCPU,MaxRSS`.
   Read `MaxRSS` from the step rows (`.batch`, `.0`); `--allocations` omits steps
   and reports utilization as zero. CPU efficiency is
-  `TotalCPU / (ElapsedRaw * AllocCPUS)`, with `TotalCPU` (HH:MM:SS) converted to
-  seconds. If `sacct` returns nothing, accounting may be off; say so.
+  `TotalCPU / (ElapsedRaw * AllocCPUS)`, with `TotalCPU` (`[DD-][HH:]MM:SS`)
+  converted to seconds. If `sacct` returns nothing, accounting may be off; say
+  so.
 - An undersized request can be killed. Where SLURM detects it, `sacct` shows
   `OUT_OF_MEMORY` with `ExitCode 0:125`, and tools report 137 (SIGKILL). After
   such a kill `MaxRSS` understates the need (it is sampled), so raise the request
@@ -150,24 +153,39 @@ wrong directory or glob, or a secret or personal data in the file list, cannot
 be undone once the data has left or is gone.
 
 - Copying or syncing: use `rsync`, and run it first with `--dry-run` and
-  `--itemize-changes`. `rsync --list-only SRC` lists a source. `cp` and
-  `scp` have no dry run. Use the same arguments, filters and trailing slashes
-  as the real command.
-- Deleting: `rm` has no dry run. Expand the exact path or glob first
-  (`ls --directory <glob>`, or a scoped `find <dir> -name <pattern> -print`, as
-  in §2) and delete only what you read, never an unexpanded variable or glob.
-  `rsync --delete` and `--remove-source-files` need `--dry-run` first; the rsync
-  manual calls `--delete` dangerous.
-- Read the list before running. Does it match the request, with nothing from
-  outside the intended directory? Does it hold secrets or personal data (`.env`,
-  keys, `*.pem`, tokens, credentials, `.git`, `.ssh`, sample sheets, data
-  directories)? Exclude them (`--exclude`, or `--files-from` a list you checked)
-  and dry-run again. Do not open the files to check. If unsure, stop and ask.
+  `--itemize-changes`, with the same arguments, filters and trailing slashes as
+  the real command. `--list-only` lists one level unless you add `--recursive`.
+  `cp` and `scp` have no dry run.
+- The dry run walks the whole source and destination, like the real run, so
+  rules 1 and 2 apply to it: run it where the real run will run (§1), or on one
+  sub-directory.
+- Deleting: `rm` has no dry run. Expand the exact path or glob once
+  (`ls --directory <glob>`, or a scoped `find <dir> -name '<pattern>' -print`,
+  as in §2), read it, and delete only those names and only what the user asked
+  to remove. `rm --recursive` also removes the contents of a directory it names,
+  so list those too. `rsync --delete` and `--remove-source-files` need
+  `--dry-run` first; the rsync manual calls `--delete` dangerous. Never copy
+  from or delete a directory that a running job writes to.
+- Read the list. Does it match the request, with nothing from outside the
+  intended directory? In the itemized output, `*deleting` lines delete at the
+  destination, `>f` lines without `+++++++++` overwrite existing files, and `cL`
+  lines are symlinks. Does it hold secrets or personal data (`.env`, keys,
+  `*.pem`, tokens, credentials, `.git`, `.ssh`), or data the user has classified
+  as sensitive or not said may be copied? Is the destination inside this project,
+  on storage approved for that data? Exclude what must not go (`--exclude`, or
+  `--files-from` a list you checked) and dry-run again. Do not open the files to
+  check. If unsure, stop and ask.
+- `--archive` copies a symlink, not its target, so deleting the target leaves a
+  broken link. Before deleting a source you copied, re-run the same copy with
+  `--dry-run --checksum --itemize-changes`: an empty list means nothing is left
+  to copy.
 - Then run the same command without `--dry-run`. Any change to the options needs
   a new dry run.
-- If nobody can answer, or the project's own rules (`AGENTS.md`) forbid running
-  transfers or deletions, stop after the dry run and give the user the listing
-  and the command.
+- If nobody can answer, or the project's rules forbid running `rsync`, `scp`,
+  `ssh` or deletions, do not run the transfer or the deletion, and do not run an
+  `rsync` that contacts a remote host, dry run included. Give the user the
+  `--dry-run` command and the real command. A local `ls --directory` or scoped
+  `find` is fine.
 - Large transfers and deletions go through the scheduler or the site's
   data-transfer node (§1).
 
@@ -185,7 +203,9 @@ be undone once the data has left or is gone.
 - [squeue - SchedMD](https://slurm.schedmd.com/squeue.html)
 - [rsync manual: --dry-run, --itemize-changes, --list-only, --delete](https://download.samba.org/pub/rsync/rsync.1)
 - [scp manual: no dry-run option](https://man.openbsd.org/scp)
-- [GNU rm and cp: no dry-run option](https://www.gnu.org/software/coreutils/manual/html_node/rm-invocation.html)
+- [GNU rm: no dry-run option](https://www.gnu.org/software/coreutils/manual/html_node/rm-invocation.html)
+- [GNU cp: no dry-run option](https://www.gnu.org/software/coreutils/manual/html_node/cp-invocation.html)
 - [scontrol - SchedMD](https://slurm.schedmd.com/scontrol.html)
-- [Slurm source: `task.c` sets TMPDIR, `slurm_protocol_defs.h` defines the 0:125 out-of-memory exit status](https://github.com/SchedMD/slurm)
+- [Slurm source: `task.c` sets TMPDIR](https://github.com/SchedMD/slurm/blob/master/src/slurmd/slurmstepd/task.c)
+- [Slurm source: `slurm_protocol_defs.h` defines the 0:125 out-of-memory exit status](https://github.com/SchedMD/slurm/blob/master/src/common/slurm_protocol_defs.h)
 - [SLURM Best Practice Guide - NCC Spain](https://hpc-portal.eu/sites/default/files/content-document/ENG_BPG_SLURM_V3_NCC%20SPAIN%20.pdf)
