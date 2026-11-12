@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# Usage: ./cluster-ssh <command...>
+patch=3
+finished() { [ -n "$(find "$0" -mmin +2 2>/dev/null)" ]; }
+has() { grep -Eq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
+hasi() { grep -Eiq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
+
+# Job id from -j/--jobs; default is the running pipeline job.
+jobid() {
+  local j
+  j=$(grep -Eo -- '(-j|--jobs?)[ =]?[0-9]+' <<<"$1" | grep -Eo '[0-9]+' | head -1)
+  echo "${j:-4242}"
+}
+
+state() {
+  if [ "$1" = 4243 ]; then echo PENDING
+  elif finished; then echo OUT_OF_MEMORY
+  else echo RUNNING; fi
+}
+
+field() {
+  local id=$1 st=$2
+  case $3 in
+    JobID) echo "$id" ;;
+    JobName) [ "$id" = 4243 ] && echo wrap || echo nf-align ;;
+    Partition) echo core ;;
+    Account) echo demo ;;
+    AllocCPUS) [ "$st" = PENDING ] && echo 0 || echo 8 ;;
+    State) echo "$st" ;;
+    ExitCode) [ "$st" = OUT_OF_MEMORY ] && echo 0:125 || echo 0:0 ;;
+    Elapsed) [ "$st" = PENDING ] && echo 00:00:00 || echo 00:42:10 ;;
+    ElapsedRaw) [ "$st" = PENDING ] && echo 0 || echo 2530 ;;
+    ReqTRES) echo 'billing=8,cpu=8,mem=16G,node=1' ;;
+    AllocTRES) [ "$st" = PENDING ] || echo 'billing=8,cpu=8,mem=16G,node=1' ;;
+    ReqMem) echo 16Gn ;;
+    AveCPU) echo 00:31:07 ;;
+    TotalCPU) echo 04:10:22 ;;
+    MaxRSS) echo 15980M ;;
+    *) echo - ;;
+  esac
+}
+
+sacct_out() {
+  local seg=$1 id st fields f row="" head="" sep=" "
+  id=$(jobid "$seg"); st=$(state "$id")
+  fields=$(grep -Eo -- '(-o|--format)[ =]+[A-Za-z,%0-9]+' <<<"$seg" | head -1 | sed -E 's/^(-o|--format)[ =]+//')
+  [ -n "$fields" ] || fields=JobID,JobName,Partition,Account,AllocCPUS,State,ExitCode
+  grep -Eq -- '(^|[[:space:]])(-P|--parsable2)([[:space:]]|$)' <<<"$seg" && sep="|"
+  for f in $(tr ',' ' ' <<<"$fields" | sed -E 's/%[0-9]+//g'); do
+    head="$head$f$sep"; row="$row$(field "$id" "$st" "$f")$sep"
+  done
+  [ "$sep" = "|" ] && { head=${head%|}; row=${row%|}; }
+  grep -Eq -- '(^|[[:space:]])(-n|--noheader)([[:space:]]|$)' <<<"$seg" || echo "$head"
+  echo "$row"
+}
+
+ls_out() {
+  local seg=$1 out dflag=0
+  if has "$seg" 'data'; then out=$'ref.fa\nref.fa.0123\nref.fa.amb\nref.fa.ann\nref.fa.bwt.2bit.64\nref.fa.pac\nsample1_R1.fastq.gz\nsample1_R2.fastq.gz'
+  elif has "$seg" 'work'; then out=$'00\n01\n02\n03'
+  elif has "$seg" 'results'; then out=''
+  elif grep -q 'nextflow\.log' <<<"$seg"; then out=/proj/demo/run1/.nextflow.log
+  elif grep -Eq '(^|[[:space:]])/proj/?([[:space:]]|$)' <<<"$seg"; then out=$'demo\notherlab'
+  elif grep -Eq '(^|[[:space:]])/proj/demo/?([[:space:]]|$)' <<<"$seg"; then out=run1
+  elif grep -Eq '(^|[[:space:]])[/~$]' <<<"$seg" && ! grep -Eq '/proj/demo/run1' <<<"$seg"; then out=''
+  else
+    out=$'data\nresults\nwork'
+    grep -Eq -- '(^|[[:space:]])(-[A-Za-z0-9]*[aA][A-Za-z0-9]*|--all|--almost-all)([[:space:]]|$)' <<<"$seg" && out=$'.nextflow.log\n'"$out"
+  fi
+  # ls -d / --directory lists the argument itself, not what is inside it
+  if grep -Eq -- '(^|[[:space:]])(-[A-Za-z0-9]*d[A-Za-z0-9]*|--directory)([[:space:]]|$)' <<<"$seg"; then
+    local w words last=.
+    dflag=1
+    read -r -a words <<<"$seg"
+    for w in "${words[@]}"; do case $w in ls | -*) ;; *) last=$w ;; esac; done
+    out=$last
+  fi
+  [ -z "$out" ] && return
+  if grep -Eq -- '(^|[[:space:]])(-[A-Za-z0-9]*l[A-Za-z0-9]*|--format=(long|verbose))([[:space:]]|$)' <<<"$seg"; then
+    [ "$dflag" = 1 ] || echo "total $(wc -l <<<"$out" | tr -d ' ')"
+    local mode
+    while IFS= read -r name; do
+      case ${name##*/} in data | results | work | run1 | demo | otherlab | [0-9][0-9]) mode=drwxr-xr-x ;; *) mode=-rw-r--r-- ;; esac
+      echo "$mode 1 me demo 4096 Nov 10 09:41 $name"
+    done <<<"$out"
+  else
+    echo "$out"
+  fi
+}
+
+lookup() {
+  local pre=${1%%[\"\']*}
+  grep -Eq '^[[:space:]]*(which|type|command|man|whereis|echo|grep|egrep|fgrep|zgrep|awk|sed|cat|tail|head|less|more|tac|nl|cut)([[:space:]]|$)|--version|--help|[[:space:]]-V([[:space:]]|$)' <<<"$pre"
+}
+tools() {
+  local w words
+  read -r -a words <<<"$1"
+  for w in "${words[@]}"; do
+    case $w in
+      sbatch | srun | salloc | squeue | sacct | scontrol | sinfo | sstat) echo "/usr/bin/$w" ;;
+      bwa-mem2 | samtools | nextflow) echo "/usr/local/bin/$w" ;;
+    esac
+  done
+}
+
+say() {
+  local t=${1#*echo }
+  t=${t//\"/}; t=${t//\'/}
+  sed -E 's/\$\{?(USER|LOGNAME)\}?/me/g; s/\$\{?HOME\}?/\/home\/me/g; s/\$\{?[A-Za-z_][A-Za-z_0-9]*\}?//g' <<<"$t"
+}
+run() {
+  local seg=$1 plain
+  # A command that redirects its output to a file prints nothing.
+  plain=$(sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g; s/[0-9]?>&[0-9]//g; s/[0-9]?>[[:space:]]*\/dev\/null//g" <<<"$seg")
+  grep -q '>' <<<"$plain" && return
+  if grep -Eq '^[[:space:]]*(which|type|command[[:space:]]+-v)([[:space:]]|$)' <<<"$seg"; then tools "$seg"; return; fi
+  if grep -Eq '^[[:space:]]*(sbatch|srun|salloc|squeue|sinfo|sacct|scontrol)[[:space:]]+--version' <<<"$seg"; then echo 'slurm 23.11.4'; return; fi
+  if has "$seg" 'sbatch' && ! lookup "$seg"; then
+    if has "$seg" '--parsable'; then echo 4243; else echo 'Submitted batch job 4243'; fi
+  elif has "$seg" 'srun|salloc' && ! lookup "$seg"; then echo 'srun: job 4244 queued and waiting for resources'
+  elif has "$seg" 'scontrol' && hasi "$seg" 'part|partitions?'; then
+    cat <<'EOF'
+PartitionName=core
+   AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL
+   AllocNodes=ALL Default=YES QoS=N/A
+   DefaultTime=01:00:00 DisableRootJobs=NO ExclusiveUser=NO GraceTime=0 Hidden=NO
+   MaxNodes=UNLIMITED MaxTime=10-00:00:00 MinNodes=0 LLN=NO MaxCPUsPerNode=UNLIMITED
+   Nodes=node[001-040]
+   OverSubscribe=NO
+   DefMemPerCPU=2000 MaxMemPerCPU=4000
+   TRES=cpu=1280,mem=5120000M,node=40,billing=1280
+   TRESBillingWeights=CPU=1.0,Mem=0.25G
+EOF
+  elif has "$seg" 'scontrol' && hasi "$seg" 'config'; then
+    printf 'DefMemPerCPU            = 2000\nMaxMemPerCPU            = 4000\nSelectType              = select/cons_tres\n'
+  elif has "$seg" 'scontrol' && hasi "$seg" 'job'; then
+    local id; id=$(grep -Eo '[0-9]{4}' <<<"$seg" | head -1); id=${id:-4242}
+    if [ "$id" = 4242 ] && finished; then echo 'slurm_load_jobs error: Invalid job id specified'
+    else echo "JobId=$id JobName=$(field "$id" x JobName) JobState=$(state "$id") Partition=core"; fi
+  elif has "$seg" 'sinfo'; then
+    if grep -Eq -- '(-o|--format|-O)' <<<"$seg"; then
+      printf 'PARTITION MEMORY CPUS\ncore* 128000 32\n'
+    else
+      printf 'PARTITION AVAIL  TIMELIMIT  NODES  STATE NODELIST\ncore*        up 10-00:00:00     40    mix node[001-040]\n'
+    fi
+  elif has "$seg" 'squeue'; then
+    local id st; id=$(jobid "$seg"); st=$(state "$id")
+    grep -Eq -- '(^|[[:space:]])(-h|--noheader)([[:space:]]|$)' <<<"$seg" ||
+      printf '             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)\n'
+    if [ "$st" = RUNNING ]; then printf '              4242      core nf-align       me  R      12:10      1 node017\n'
+    elif [ "$st" = PENDING ]; then printf '              4243      core     wrap       me PD       0:00      1 (Priority)\n'; fi
+  elif has "$seg" 'sacct'; then sacct_out "$seg"
+  elif grep -Eq '^[[:space:]]*echo[[:space:]]' <<<"$seg"; then say "$seg"
+  elif has "$seg" 'hostname'; then echo login1
+  elif has "$seg" 'whoami'; then echo me
+  elif has "$seg" 'date'; then echo 'Tue Nov 10 10:44:37 CET 2026'
+  elif has "$seg" 'samtools' && has "$seg" 'version|--version'; then echo 'samtools 1.19'
+  elif has "$seg" 'bwa-mem2' && has "$seg" 'version|--version'; then echo "2.9.$patch"
+  elif has "$seg" 'module' && has "$seg" 'avail|spider'; then echo "bwa-mem2/2.9.$patch  samtools/1.19  nextflow/24.10.0"
+  elif has "$seg" 'which' && has "$seg" 'bwa-mem2'; then echo /usr/local/bin/bwa-mem2
+  elif has "$seg" 'cat|tail|head|grep|egrep|fgrep|zgrep|less|more|sed|awk|tac|nl|cut|strings' && grep -q 'nextflow\.log' <<<"$ALL"; then
+    cat <<'EOF' | sed 's/@KIND@/error exit/'
+Nov-10 09:41:02.118 [main] INFO  nextflow.Session - Session started
+Nov-10 10:02:11.482 [Task monitor] ERROR nextflow.processor.TaskProcessor - Error executing process > 'ALIGN (sample1)'
+Caused by:
+  Process `ALIGN (sample1)` terminated with an @KIND@ status (137)
+Nov-10 10:02:12.004 [Task monitor] INFO  nextflow.processor.TaskProcessor - Re-submitted process > ALIGN (sample1) (attempt 2)
+EOF
+  elif has "$seg" 'find'; then echo /proj/demo/run1/.nextflow.log
+  elif has "$seg" 'ls'; then ls_out "$seg"
+  fi
+}
+
+# Split the command into the commands it runs: on ; && and newlines outside quotes. A pipeline keeps only
+# its first command. Here-document bodies are text, not commands, so they are skipped.
+split() {
+  printf '%s\n' "$1" | awk '
+    function add(x) { if (!pipe) seg = seg x }
+    function emit(   t) { t = seg; gsub(/^[ \t]+|[ \t]+$/, "", t); if (t != "") print t; seg = ""; pipe = 0 }
+    {
+      if (hd != "") { t = $0; if (hdtab) sub(/^\t+/, "", t); if (t == hd) hd = ""; next }
+      line = $0; n = length(line); pend = ""
+      for (i = 1; i <= n; i++) {
+        c = substr(line, i, 1); d = substr(line, i + 1, 1)
+        if (q != "") {
+          if (c == "\\" && q == "\"") { add(c d); i++; continue }
+          if (c == q) q = ""
+          add(c); continue
+        }
+        if (c == ";" || (c == "&" && d == "&")) { emit(); if (c == "&") i++; continue }
+        if (c == "|" && d != "|" && (i == 1 || substr(line, i - 1, 1) != "|")) { pipe = 1; continue }
+        if (c == "\\") { add(c d); i++; continue }
+        if (c == "\"" || c == "\047") { q = c; add(c); continue }
+        if (c == "<" && d == "<") {
+          if (substr(line, i + 2, 1) == "<") { add("<<<"); i += 2; continue }
+          j = i + 2; tab = 0
+          if (substr(line, j, 1) == "-") { tab = 1; j++ }
+          while (substr(line, j, 1) == " ") j++
+          e = substr(line, j, 1); if (e == "\047" || e == "\"") j++
+          w = ""
+          while (j <= n && substr(line, j, 1) ~ /[A-Za-z0-9_.-]/) { w = w substr(line, j, 1); j++ }
+          if (w != "") { pend = w; pendtab = tab }
+          add("<<"); i++; continue
+        }
+        add(c)
+      }
+      if (q != "") seg = seg " "; else emit()
+      if (pend != "") { hd = pend; hdtab = pendtab }
+    }
+    END { emit() }'
+}
+
+ALL=$*
+split "$ALL" | while IFS= read -r seg; do
+  run "$seg"
+done
+exit 0
