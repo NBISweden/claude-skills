@@ -4,12 +4,101 @@
 # sandbox and permission-mode keys listed under "Existing sandbox settings": paths, hosts and
 # command patterns the user must review.
 # Usage: check.sh [project-dir]   (default: current directory)
+#        check.sh --verify [project-dir]   what is configured, tested and not tested, one line each;
+#        exit 1 if a line says NO or NOT BLOCKED. Uses only bash builtins, jq and curl.
 set -u
+verify=
+[ "${1:-}" = --verify ] && { verify=1; shift; }
 cd "${1:-.}" || exit 1
 project=$(pwd -P)
 
 say() { printf '%s\n' "$*"; }
 ver_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
+
+if [ -n "$verify" ]; then
+  status=0
+  line() { say "$*"; case $* in *": NO "*|*": NOT BLOCKED "*) status=1 ;; esac; }
+  p=.claude/settings.json l=.claude/settings.local.json u=~/.claude/settings.json
+  pbad='' ubad='' pj='' uj=''
+  if ! command -v jq >/dev/null; then pbad="jq is not installed" ubad=$pbad
+  else
+    # -f -s: inside the sandbox a missing local file can show up as an empty placeholder
+    files=("$p"); [ -f "$l" ] && [ -s "$l" ] && files+=("$l")
+    # the local file overrides the project file; deny lists from both count
+    pj=$(jq -e -s 'if length > 0 and all(.[]; type == "object") then reduce .[] as $x ({}; . * $x) + {denyRead: [.[].sandbox.filesystem.denyRead[]?], deny: [.[].permissions.deny[]?]} else empty end' \
+      "${files[@]}" 2>/dev/null) || pbad="cannot read $p${files[1]:+ or $l}"
+    uj=$(jq -e 'if type == "object" then . else empty end' "$u" 2>/dev/null) || ubad="cannot read ~/.claude/settings.json"
+  fi
+  masked() {   # $1: folder; true when the sandbox visibly hides it
+    local abs; abs=$(cd "$1" 2>/dev/null && pwd -P) || return 0   # cannot enter: refused
+    ls "$1" >/dev/null 2>&1 || return 0
+    [ -r /proc/self/mountinfo ] && awk -v d="$abs" '$5 == d { f = 1 } END { exit !f }' /proc/self/mountinfo
+  }
+  conf() {   # $1: jq test, $2: what, $3: settings JSON, $4: why it is unknown, if it is
+    if [ -n "$4" ]; then line "configured: unknown  $2 ($4)"
+    elif jq -e "$1" <<<"$3" >/dev/null 2>&1; then line "configured: yes  $2"
+    else line "configured: NO  $2"; fi
+  }
+
+  # Read block: a harmless file with known content that safe-setup placed in a folder it blocks.
+  what="reading a blocked project folder"
+  if [ -n "$pbad" ]; then read_line="not tested: $what ($pbad)"
+  elif ! jq -e 'any(.denyRead[]; rtrimstr("/") == "./.nbis-safety/blocked")' <<<"$pj" >/dev/null; then
+    read_line="not tested: $what (safe-setup has not placed the test file; run it again)"
+  else
+    # A read that fails proves nothing by itself. It counts as blocked only when the sandbox's hand shows:
+    # on Linux the folder is covered by a mount of its own, on macOS listing it is refused.
+    c=
+    { IFS= read -r c < .nbis-safety/blocked/canary; } 2>/dev/null
+    if [ "$c" = "nbis-safety canary: this file holds nothing secret" ]; then read_line="tested: NOT BLOCKED  $what"
+    elif [ -n "$c" ]; then read_line="not tested: $what (the test file has changed; run safe-setup again)"
+    elif [ ! -d .nbis-safety/blocked ]; then read_line="not tested: $what (the test file is missing; run safe-setup again)"
+    elif masked .nbis-safety/blocked; then read_line="tested: blocked  $what"
+    elif [ -r . ]; then read_line="not tested: $what (the test file is missing or empty, and nothing shows the sandbox hid it; run this in a Claude session, or run safe-setup again)"
+    else read_line="not tested: $what (cannot read the project folder)"
+    fi
+  fi
+  outside=
+  case $read_line in *"NOT BLOCKED"*)
+    outside=1
+    say "note: the test file was readable, so this ran outside the sandbox (typed with ! or in a terminal) or the sandbox is off. Ask Claude to run it in a session to test the sandbox." ;;
+  esac
+  line "$read_line"
+
+  conf '.sandbox.enabled == true' "sandbox on in this project" "$pj" "$pbad"
+  conf '.sandbox.failIfUnavailable == true' "Claude Code stops if the sandbox cannot start" "$pj" "$pbad"
+  conf '.sandbox.allowUnsandboxedCommands == false' "a failed command is not retried outside the sandbox" "$pj" "$pbad"
+  conf '(.sandbox.excludedCommands // []) | length == 0' "no command is excluded from the sandbox" "$pj" "$pbad"
+  conf '[.sandbox.filesystem.disabled, .sandbox.enableWeakerNestedSandbox, .sandbox.enableWeakerNetworkIsolation] | any(. == true) | not' "no setting weakens the sandbox" "$pj" "$pbad"
+  conf '.permissions.defaultMode != "bypassPermissions"' "permission checks are not bypassed" "$pj" "$pbad"
+  if [ -n "$pbad" ] || jq -e '.sandbox.autoAllowBashIfSandboxed == false' <<<"$pj" >/dev/null; then
+    conf '.autoMemoryEnabled == false' "memory off" "$pj" "$pbad"
+  else line "not tested: memory off (NBIS's own open code keeps memory)"
+  fi
+  conf 'any(.denyRead[]; . == "~/" or . == "~")' "home is blocked for shell commands" "$pj" "$pbad"
+  # Data folders by number, never by path: a path can carry an identifier.
+  # The matching Read() deny rule is what keeps Claude's own file tools out.
+  [ -z "$pbad" ] && while IFS= read -r d; do line "$d"; done < <(jq -r '.deny as $deny
+    | [.denyRead[] | rtrimstr("/") | select(. != "~" and . != "./.nbis-safety/blocked")] | to_entries[]
+    | (.value | if startswith("./") then "Read(/" + .[2:] + "/**)" elif startswith("/") then "Read(/" + . + "/**)"
+               else "Read(" + . + "/**)" end) as $rule
+    | "configured: \(if any($deny[]; . == $rule) then "yes" else "NO" end)  data folder \(.key + 1) out of reach of shell commands and Claude'"'"'s file tools"' \
+    <<<"$pj")
+  conf '.sandbox.network.strictAllowlist == true' "network list is a hard limit" "$uj" "$ubad"
+  conf '.autoMode.classifyAllShell == true' "every shell command goes through the classifier" "$uj" "$ubad"
+
+  # Network: one host on the list, one not.
+  what="a host outside the network list"
+  if jq -e -n --argjson p "${pj:-null}" --argjson u "${uj:-null}" '[$p, $u | .sandbox?.network?.allowedDomains[]?] | any(. == "example.com" or . == "*.com" or . == "*")' >/dev/null 2>&1; then
+    line "not tested: network (the test host example.com is on a network list)"
+  elif ! command -v curl >/dev/null; then line "not tested: network (curl is not installed)"
+  elif ! curl -q -s -o /dev/null --max-time 5 https://pypi.org; then line "not tested: network (offline, or the listed host is unreachable)"
+  elif curl -q -s -o /dev/null --max-time 5 https://example.com; then line "tested: NOT BLOCKED  $what"
+  elif [ -n "$outside" ]; then line "not tested: network (a host outside the list was refused, but this run is outside the sandbox)"
+  else line "tested: blocked  $what"
+  fi
+  exit "$status"
+fi
 
 say "== Claude Code"
 v=$(claude --version 2>/dev/null | awk '{print $1}')
