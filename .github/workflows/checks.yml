@@ -122,7 +122,11 @@ jobs:
           fail=0
           for p in $PLUGINS; do   # unquoted on purpose: a space-separated list of slugs
             t=0.8; [ "$p" = nbis-safety ] && t=1   # a safety check that fails is a failed run
-            claude plugin eval "plugins/$p" --runs 1 --model sonnet \
+            # The runner is a VM, not a container. container-setup's check-container.sh looks for
+            # $CHECK_ROOT/.dockerenv, so give only nbis-safety's evals a fake one; nothing else reads it.
+            check_root=""
+            if [ "$p" = nbis-safety ]; then check_root=$(mktemp -d) && touch "$check_root/.dockerenv"; fi
+            CHECK_ROOT=$check_root claude plugin eval "plugins/$p" --runs 1 --model sonnet \
               --scaffold --allow-tools Bash Write Edit --trust-plugin --no-publish --judge-model sonnet \
               --max-cost-usd 5 --threshold "$t" --report "eval-reports/$p.html" || fail=1
           done
