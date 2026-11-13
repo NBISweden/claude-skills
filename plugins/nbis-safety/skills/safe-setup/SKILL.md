@@ -240,10 +240,21 @@ project paths there.
 
 ## 4. Build the instructions
 
-- `AGENTS.md`: read `AGENTS-support.md` (a researcher's project) or
+- **An existing `AGENTS.md` stays.** It holds the project's own rules,
+  which may differ from the templates on purpose (for example a course on
+  public data, where reading the data is the point). Do not replace it or
+  reword its rules. Compare it with the template and propose only what is
+  missing, as additions shown in a diff; if a rule in it conflicts with the
+  template, point that out and leave it as it is. If nothing is missing,
+  leave the file unchanged and say so.
+- New `AGENTS.md`: read `AGENTS-support.md` (a researcher's project) or
   `AGENTS-dev.md` (NBIS's own open code) and write
   `AGENTS.md` with the Write tool (not `cp`), filling in the data
-  directories.
+  directories: replace `{{DATA_DIRS}}` with the paths from question 3.
+  If there are none, replace the whole bullet that holds `{{DATA_DIRS}}`
+  with `- There are no data directories in this project.` (support
+  template) or delete that bullet (development template). No `{{...}}`
+  placeholder may be left in the file you show or write.
 - `CLAUDE.md`: make sure it contains the line `@AGENTS.md`, so Claude Code
   reads the same file as Copilot, Codex, Cursor and Gemini. A `CLAUDE.md` in
   this or any parent directory stops Claude Code from reading `AGENTS.md`

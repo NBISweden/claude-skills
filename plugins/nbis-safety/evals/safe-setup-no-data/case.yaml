@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: safe-setup-no-data
+expected_outcome: |
+  The project has code but no data directory. Writes (or, where the write to
+  the protected .claude/ directory is refused, shows in full)
+  .claude/settings.json with the sandbox on and no data entries. Writes
+  AGENTS.md from the support template, where the data-directory bullet says
+  there are no data directories and no {{...}} placeholder is left, and a
+  CLAUDE.md that imports it.
+context:
+  scaffold_script: place-files.sh
