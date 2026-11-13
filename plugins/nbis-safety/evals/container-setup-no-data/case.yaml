@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: container-setup-no-data
+expected_outcome: |
+  The CI runner is not a container; the eval step sets CHECK_ROOT to a
+  directory with a .dockerenv, so check-container.sh reports "running in a
+  container".
+  The project has code but no data directory. Writes (or, where the write to
+  the protected .claude/ directory is refused, shows in full)
+  .claude/settings.json with only permissions.deny for secrets, no data
+  rules and no "sandbox" key. Writes AGENTS.md from the support template,
+  adapted for a container, where the data-directory line says there are no
+  data directories and no {{...}} placeholder is left, and a CLAUDE.md that
+  imports it.
+context:
+  scaffold_script: place-files.sh

@@ -1,0 +1,14 @@
+schema_version: "1.1"
+name: container-setup-existing-agents
+expected_outcome: |
+  The CI runner is not a container; the eval step sets CHECK_ROOT to a
+  directory with a .dockerenv, so check-container.sh reports "running in a
+  container".
+  The project already has an AGENTS.md with its own course rules, which let
+  Claude read the public data in course-data/, and a CLAUDE.md that imports
+  it. The skill keeps that AGENTS.md: the course rules are still there,
+  unchanged, and anything it adds from the template is an addition shown as
+  a diff, not a replacement. The data is K0–K1, so .claude/settings.json
+  gets no deny rules for course-data/ and no "sandbox" key.
+context:
+  scaffold_script: place-files.sh

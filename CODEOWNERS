@@ -9,3 +9,10 @@
 /plugins/nbis-safety/skills/hpc-cluster-safety/       @mahesh-panchal @jhagberg @viklund
 /plugins/nbis-safety/evals/hpc-cluster-safety-*/      @mahesh-panchal @jhagberg @viklund
 /plugins/nbis-safety/tests/*hpc*                      @mahesh-panchal @jhagberg @viklund
+/plugins/nbis-safety/skills/container-setup/            @MalinAhlberg @jhagberg
+/plugins/nbis-safety/evals/container-setup-host-stop/   @MalinAhlberg @jhagberg
+/plugins/nbis-safety/evals/container-setup-support/     @MalinAhlberg @jhagberg
+/plugins/nbis-safety/evals/container-setup-no-data/     @MalinAhlberg @jhagberg
+/plugins/nbis-safety/evals/container-setup-existing-agents/ @MalinAhlberg @jhagberg
+/plugins/nbis-safety/tests/test-check-container.sh      @MalinAhlberg @jhagberg
+/plugins/nbis-safety/skills/safe-setup/lib-project.sh  @MalinAhlberg @jhagberg @viklund
