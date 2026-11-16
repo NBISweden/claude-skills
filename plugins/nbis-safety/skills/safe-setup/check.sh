@@ -19,15 +19,20 @@ if [ -n "$verify" ]; then
   status=0
   line() { say "$*"; case $* in *": NO "*|*": NOT BLOCKED "*) status=1 ;; esac; }
   p=.claude/settings.json l=.claude/settings.local.json u=~/.claude/settings.json
-  pbad='' ubad='' pj='' uj=''
+  pbad='' ubad='' pj='' uj='' aj=''
+  # Claude Code's merge: a later file overrides single values, lists from every file add up
+  merge='def m($a; $b): if ($a|type) == "object" and ($b|type) == "object" then reduce ($b|keys_unsorted[]) as $k ($a; .[$k] = m($a[$k]; $b[$k]))
+    elif ($a|type) == "array" and ($b|type) == "array" then $a + $b elif $b == null then $a else $b end;'
   if ! command -v jq >/dev/null; then pbad="jq is not installed" ubad=$pbad
   else
     # -f -s: inside the sandbox a missing local file can show up as an empty placeholder
     files=("$p"); [ -f "$l" ] && [ -s "$l" ] && files+=("$l")
-    # the local file overrides the project file; deny lists from both count
-    pj=$(jq -e -s 'if length > 0 and all(.[]; type == "object") then reduce .[] as $x ({}; . * $x) + {denyRead: [.[].sandbox.filesystem.denyRead[]?], deny: [.[].permissions.deny[]?]} else empty end' \
+    pj=$(jq -e -s "$merge"' if length > 0 and all(.[]; type == "object") then reduce .[] as $x ({}; m(.; $x))
+      | . + {denyRead: (.sandbox.filesystem.denyRead // []), deny: (.permissions.deny // [])} else empty end' \
       "${files[@]}" 2>/dev/null) || pbad="cannot read $p${files[1]:+ or $l}"
     uj=$(jq -e 'if type == "object" then . else empty end' "$u" 2>/dev/null) || ubad="cannot read ~/.claude/settings.json"
+    # user, project and local together, for the protections a user setting can undo
+    [ -z "$pbad$ubad" ] && aj=$(jq -n --argjson u "$uj" --argjson p "$pj" "$merge"' m($u; $p)')
   fi
   masked() {   # $1: folder; true when the sandbox visibly hides it
     local abs; abs=$(cd "$1" 2>/dev/null && pwd -P) || return 0   # cannot enter: refused
@@ -68,9 +73,9 @@ if [ -n "$verify" ]; then
   conf '.sandbox.enabled == true' "sandbox on in this project" "$pj" "$pbad"
   conf '.sandbox.failIfUnavailable == true' "Claude Code stops if the sandbox cannot start" "$pj" "$pbad"
   conf '.sandbox.allowUnsandboxedCommands == false' "a failed command is not retried outside the sandbox" "$pj" "$pbad"
-  conf '(.sandbox.excludedCommands // []) | length == 0' "no command is excluded from the sandbox" "$pj" "$pbad"
-  conf '[.sandbox.filesystem.disabled, .sandbox.enableWeakerNestedSandbox, .sandbox.enableWeakerNetworkIsolation] | any(. == true) | not' "no setting weakens the sandbox" "$pj" "$pbad"
-  conf '.permissions.defaultMode != "bypassPermissions"' "permission checks are not bypassed" "$pj" "$pbad"
+  conf '(.sandbox.excludedCommands // []) | length == 0' "no command is excluded from the sandbox" "$aj" "${pbad:-$ubad}"
+  conf '[.sandbox.filesystem.disabled, .sandbox.enableWeakerNestedSandbox, .sandbox.enableWeakerNetworkIsolation] | any(. == true) | not' "no setting weakens the sandbox" "$aj" "${pbad:-$ubad}"
+  conf '.permissions.defaultMode != "bypassPermissions"' "permission checks are not bypassed" "$aj" "${pbad:-$ubad}"
   if [ -n "$pbad" ] || jq -e '.sandbox.autoAllowBashIfSandboxed == false' <<<"$pj" >/dev/null; then
     conf '.autoMemoryEnabled == false' "memory off" "$pj" "$pbad"
   else line "not tested: memory off (NBIS's own open code keeps memory)"

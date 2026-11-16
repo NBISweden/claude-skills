@@ -128,6 +128,7 @@ expect 'configured: yes  network list is a hard limit'
 expect 'configured: yes  memory off'
 expect 'configured: yes  home is blocked for shell commands'
 expect 'configured: yes  data folder 1'
+expect 'configured: yes  no command is excluded from the sandbox'
 exit_is 0
 refuse './data'
 refuse 's1.fastq'
@@ -154,12 +155,23 @@ exit_is 1
 setup "$support" '{broken'
 out=$(verify)
 expect 'configured: unknown  network list is a hard limit'
+expect 'configured: unknown  no command is excluded from the sandbox'
 refuse 'broken'
-# 7. no user settings file
+# 7. no user settings file (in the sandbox it can be hidden, not missing)
 setup "$support" ''
 out=$(verify)
 expect 'configured: unknown  network list is a hard limit'
+expect 'configured: unknown  no setting weakens the sandbox'
 refuse 'check.sh: line'
+# lists add up across user, project and local settings, as in Claude Code; single values override
+setup "$support" '{"sandbox":{"excludedCommands":["python3 *"],"enableWeakerNestedSandbox":true}}'
+out=$(verify)
+expect 'configured: NO  no command is excluded from the sandbox'
+expect 'configured: NO  no setting weakens the sandbox'
+setup "$(jq -c '.sandbox.excludedCommands = ["python3 *"]' <<<"$support")" "$strict"
+echo '{"sandbox":{"excludedCommands":[]}}' > "$proj/.claude/settings.local.json"
+out=$(verify)
+expect 'configured: NO  no command is excluded from the sandbox'
 # 8. settings.local.json turns the sandbox off
 setup "$support" "$strict"
 echo '{"sandbox":{"enabled":false}}' > "$proj/.claude/settings.local.json"
