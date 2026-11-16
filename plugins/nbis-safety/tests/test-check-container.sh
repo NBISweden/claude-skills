@@ -19,6 +19,8 @@ cat > "$fake/self/mountinfo" <<M
 31 1 259:2 /home/tester/.ssh /root/.ssh ro,relatime - ext4 /dev/sda1 rw
 32 1 0:25 /docker.sock /var/run/docker.sock rw,nosuid - tmpfs tmpfs rw
 33 1 0:99 / /proc rw,nosuid - proc proc rw
+34 1 0:50 / /home/tester/.aws ro,relatime - tmpfs tmpfs rw
+35 1 0:51 / /dev/shm rw,nosuid - tmpfs shm rw
 M
 printf '12:memory:/docker/abc\n' > "$fake/1/cgroup"
 
@@ -45,6 +47,8 @@ expect 'WEAK: CapEff 00000000a80425fb'
 expect 'WEAK: NoNewPrivs 0'
 expect 'WEAK: ~/.ssh is mounted (/root/.ssh)'
 expect 'WEAK: a container socket is mounted (/var/run/docker.sock)'
+expect 'WEAK: ~/.aws is mounted (/home/tester/.aws)'   # tmpfs, e.g. a Kubernetes secret volume
+refuse '/dev/shm'                                     # routine tmpfs stays hidden
 expect 'exists in the container'
 expect 'blocked: https://example.com is not reachable'
 expect '.claude/settings.json: sandbox.enabled true, failIfUnavailable true'

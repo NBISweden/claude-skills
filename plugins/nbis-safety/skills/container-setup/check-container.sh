@@ -46,19 +46,23 @@ say "-- mounts (source -> target; home, ~/.ssh, ~/.aws, ~/.config/gh and contain
 awk -v home="$HOME" '
   { for (i = 7; i <= NF && $i != "-"; i++) ; fs = $(i + 1)
     src = $4; dst = $5; opts = ($6 ~ /(^|,)ro(,|$)/) ? "ro" : "rw"
-    sockmnt = (src ~ /(docker|podman)\.sock$/ || dst ~ /(docker|podman)\.sock$/)
-    if (!sockmnt && fs ~ /^(proc|sysfs|tmpfs|devpts|cgroup2?|mqueue|overlay|devtmpfs)$/) next
-    if (dst ~ /^\/etc\/(resolv.conf|hostname|hosts)$/) next
-    printf "mount: %s -> %s (%s)\n", src, dst, opts
+    routine = (fs ~ /^(proc|sysfs|tmpfs|devpts|cgroup2?|mqueue|overlay|devtmpfs)$/ \
+               || dst ~ /^\/etc\/(resolv.conf|hostname|hosts)$/)
+    # Sensitive paths are checked on every mount, routine types included: a Kubernetes
+    # secret volume is tmpfs, so a key mounted at ~/.ssh would otherwise be skipped.
+    w = ""
     for (j = 0; j < 2; j++) {
       p = (j == 0) ? src : dst
-      if (p == "/root" || p == home || p ~ /^\/home\/[^\/]+$/)
-        printf "WEAK: a home directory is mounted (%s); mount only the project\n", p
-      if (p ~ /\/\.ssh(\/|$)/) printf "WEAK: ~/.ssh is mounted (%s); do not mount it\n", p
-      if (p ~ /\/\.aws(\/|$)/) printf "WEAK: ~/.aws is mounted (%s); do not mount it\n", p
-      if (p ~ /\/\.config\/gh(\/|$)/) printf "WEAK: ~/.config/gh is mounted (%s); do not mount it\n", p
-      if (p ~ /(docker|podman)\.sock$/) printf "WEAK: a container socket is mounted (%s); it gives root on the host, never mount it\n", p
+      if (!routine && (p == "/root" || p == home || p ~ /^\/home\/[^\/]+$/))
+        w = w sprintf("WEAK: a home directory is mounted (%s); mount only the project\n", p)
+      if (p ~ /\/\.ssh(\/|$)/) w = w sprintf("WEAK: ~/.ssh is mounted (%s); do not mount it\n", p)
+      if (p ~ /\/\.aws(\/|$)/) w = w sprintf("WEAK: ~/.aws is mounted (%s); do not mount it\n", p)
+      if (p ~ /\/\.config\/gh(\/|$)/) w = w sprintf("WEAK: ~/.config/gh is mounted (%s); do not mount it\n", p)
+      if (p ~ /(docker|podman)\.sock$/) w = w sprintf("WEAK: a container socket is mounted (%s); it gives root on the host, never mount it\n", p)
     }
+    if (routine && w == "") next
+    printf "mount: %s -> %s (%s)\n", src, dst, opts
+    printf "%s", w
   }' "$proc/self/mountinfo" 2>/dev/null | awk '!seen[$0]++' || true
 [ -e "$sock" ] && say "WEAK: $sock exists in the container; it gives root on the host, never mount it"
 
