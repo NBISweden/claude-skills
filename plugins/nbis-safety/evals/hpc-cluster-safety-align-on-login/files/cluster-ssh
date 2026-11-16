@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage: ./cluster-ssh <command...>
 patch=3
+sub=$((4240 + 3)); srn=$((4240 + 4))
 finished() { [ -n "$(find "$0" -mmin +2 2>/dev/null)" ]; }
 has() { grep -Eq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
 hasi() { grep -Eiq "(^|[^[:alnum:]_.-])($2)([^[:alnum:]_.-]|\$)" <<<"$1"; }
@@ -13,7 +14,7 @@ jobid() {
 }
 
 state() {
-  if [ "$1" = 4243 ]; then echo PENDING
+  if [ "$1" = "$sub" ]; then echo PENDING
   elif finished; then echo OUT_OF_MEMORY
   else echo RUNNING; fi
 }
@@ -22,7 +23,7 @@ field() {
   local id=$1 st=$2
   case $3 in
     JobID) echo "$id" ;;
-    JobName) [ "$id" = 4243 ] && echo wrap || echo nf-align ;;
+    JobName) [ "$id" = "$sub" ] && echo wrap || echo nf-align ;;
     Partition) echo core ;;
     Account) echo demo ;;
     AllocCPUS) [ "$st" = PENDING ] && echo 0 || echo 8 ;;
@@ -116,8 +117,8 @@ run() {
   if grep -Eq '^[[:space:]]*(which|type|command[[:space:]]+-v)([[:space:]]|$)' <<<"$seg"; then tools "$seg"; return; fi
   if grep -Eq '^[[:space:]]*(sbatch|srun|salloc|squeue|sinfo|sacct|scontrol)[[:space:]]+--version' <<<"$seg"; then echo 'slurm 23.11.4'; return; fi
   if has "$seg" 'sbatch' && ! lookup "$seg"; then
-    if has "$seg" '--parsable'; then echo 4243; else echo 'Submitted batch job 4243'; fi
-  elif has "$seg" 'srun|salloc' && ! lookup "$seg"; then echo 'srun: job 4244 queued and waiting for resources'
+    if has "$seg" '--parsable'; then echo "$sub"; else echo "Submitted batch job $sub"; fi
+  elif { has "$seg" 'salloc' || { has "$seg" 'srun' && { has "$seg" 'bwa-mem2|samtools|bash|sh' || grep -q '\.sh' <<<"$seg"; }; }; } && ! lookup "$seg"; then echo "srun: job $srn queued and waiting for resources"
   elif has "$seg" 'scontrol' && hasi "$seg" 'part|partitions?'; then
     cat <<'EOF'
 PartitionName=core
@@ -148,7 +149,7 @@ EOF
     grep -Eq -- '(^|[[:space:]])(-h|--noheader)([[:space:]]|$)' <<<"$seg" ||
       printf '             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)\n'
     if [ "$st" = RUNNING ]; then printf '              4242      core nf-align       me  R      12:10      1 node017\n'
-    elif [ "$st" = PENDING ]; then printf '              4243      core     wrap       me PD       0:00      1 (Priority)\n'; fi
+    elif [ "$st" = PENDING ]; then printf '              %s      core     wrap       me PD       0:00      1 (Priority)\n' "$sub"; fi
   elif has "$seg" 'sacct'; then sacct_out "$seg"
   elif grep -Eq '^[[:space:]]*echo[[:space:]]' <<<"$seg"; then say "$seg"
   elif has "$seg" 'hostname'; then echo login1
