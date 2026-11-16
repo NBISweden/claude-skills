@@ -31,11 +31,13 @@ anywhere else:
 | `<project>/.claude/settings.json` | The enforced settings (step 3) |
 | `<project>/AGENTS.md` | The instructions (step 4) |
 | `<project>/CLAUDE.md` | The line `@AGENTS.md`, appended if the file exists |
-| `<project>/.gitignore` | One line, on a yes: `.claude/settings.json` (step 5) |
+| `<project>/.nbis-safety/blocked/canary` | One known, harmless line that `check.sh --verify` tries to read (step 5) |
+| `<project>/.nbis-safety/check.sh` | A copy of this skill's `check.sh`, so the check can run inside the sandbox (step 5) |
+| `<project>/.gitignore` | Two lines, on a yes: `.claude/settings.json` and `.nbis-safety/` (step 5) |
 
 Never write `~/.claude/CLAUDE.md`, `~/.claude/settings.json` (except the
-separate, approved `strictAllowlist` and `classifyAllShell` lines and
-whole-computer baseline in step 3), `.claude/settings.local.json`,
+separate, approved `strictAllowlist`, its `sandbox.network.allowedDomains`
+list and `classifyAllShell`, and the whole-computer baseline, all in step 3), `.claude/settings.local.json`,
 or a file in a parent directory. Name the full paths when you show the files.
 
 ## 1. Check, without changing anything
@@ -120,7 +122,7 @@ Start from this, then adjust as listed:
     "autoAllowBashIfSandboxed": false,
     "allowUnsandboxedCommands": false,
     "filesystem": {
-      "denyRead": ["~/"],
+      "denyRead": ["~/", "./.nbis-safety/blocked"],
       "allowRead": [".", "~/.gitconfig"],
       "denyWrite": []
     },
@@ -133,10 +135,15 @@ Start from this, then adjust as listed:
     "deny": ["Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)",
              "Read(/**/.env)", "Read(/**/.env.*)", "Read(/**/*.pem)", "Read(/**/*.key)",
              "Read(/**/*.p12)", "Read(/**/.netrc)", "Read(/**/id_rsa*)", "Read(/**/id_ed25519*)",
-             "Read(/**/credentials*)"]
+             "Read(/**/credentials*)", "Read(/.nbis-safety/blocked/**)"]
   }
 }
 ```
+
+- **Test file:** `./.nbis-safety/blocked` in `denyRead` and `Read(/.nbis-safety/blocked/**)`
+  keep the test file from step 5 out of reach the same way as a data
+  folder, so `check.sh --verify` can test the block without touching real
+  data or home.
 
 - **Secrets:** the deny rules match the same names `check.sh` searches
   for, at any depth in the project, and Claude Code adds `Read(...)` deny
@@ -208,7 +215,14 @@ Start from this, then adjust as listed:
   set), with the reason: "without it, a command matching one of your own
   allow rules skips the classifier". Both apply to all the user's
   projects, so write them only on a separate yes. If the user says no,
-  say plainly that the network list is then not a hard limit. For a
+  say plainly that the network list is then not a hard limit.
+  With `strictAllowlist` on, Claude Code ignores the project's
+  `allowedDomains`: even a host listed there is refused (tested, 2.1.322,
+  Ubuntu). So write the same registry list as
+  `sandbox.network.allowedDomains` next to `strictAllowlist` in
+  `~/.claude/settings.json`, merged with what is there, and tell the user
+  that this one list then applies to every sandboxed project on the
+  computer. For a
   researcher's project, do not call the setup safe without `classifyAllShell`.
 - **Whole computer (offer, separate yes):** a folder where nobody ran this
   skill has no protection. Offer to merge these into the `permissions.deny`
@@ -257,9 +271,14 @@ is not there yet, show the result, and point out any weakening key from
 step 1 that the user chose to keep), append to an existing `CLAUDE.md`,
 and show a diff against an existing `AGENTS.md`.
 
+Copy this skill's `check.sh` to `.nbis-safety/check.sh` (overwrite an older copy: it is ours), and write `.nbis-safety/blocked/canary` first, before `.claude/settings.json`, with
+the Write tool, containing exactly the line
+`nbis-safety canary: this file holds nothing secret`. Do not overwrite it:
+if it exists, leave it as it is.
+
 `.claude/settings.json` holds paths from this machine. Offer to add
-`.claude/settings.json` to `.gitignore` (append once; do not add it
-twice). Show every
+`.claude/settings.json` and `.nbis-safety/` to `.gitignore` (append each
+once; do not add a line that is already there). Show every
 file in full or as a diff, explain each enforced rule in one line, and
 write only after the user says yes in this conversation. A yes given in
 advance in their request counts. If a write is refused (Claude Code protects
@@ -283,11 +302,17 @@ Tell the user:
    Ubuntu's AppArmor restriction. On Ubuntu 24.04 and later, the packaged
    profile `/etc/apparmor.d/bwrap-userns-restrict` can override the fix the
    docs give; the user, not Claude, decides whether to disable it.
-2. Check it works, in that session, by asking Claude to run each command:
-   `which python3` (or R) should work, `ls ~/.ssh` should fail, and
-   reading a data file should be refused. Typing them yourself with `!`
-   tests nothing, since `!` runs outside the sandbox.
-   Do not run it in `bypassPermissions` mode: there, hosts outside the
+2. Check it, in that session: ask Claude to run
+   `bash .nbis-safety/check.sh --verify`. (This skill's own folder is
+   under home, which the sandbox hides; that is why the project has a
+   copy.) It prints one line per protection:
+   *configured*, *tested* or *not tested*. A protection with no line, or a
+   run that Claude or auto mode declined, counts as not tested. The lines
+   about `~/.claude/settings.json` say *unknown* there, since the sandbox
+   hides home; step 1's `check.sh` shows those keys. Run it again when you
+   change settings or add data. Typed with `!` it runs outside the sandbox
+   and reports NOT BLOCKED, which is expected there.
+   Do not run the session in `bypassPermissions` mode: there, hosts outside the
    network list connect without asking unless `strictAllowlist` is on.
 3. What the sandbox stops on purpose, and what to do instead:
    - `ssh`, `scp` and `rsync` to Uppmax, Dardel or other servers cannot

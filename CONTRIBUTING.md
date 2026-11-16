@@ -99,6 +99,11 @@ pull request. Run them locally before you ask:
 claude plugin eval plugins/<plugin> --runs 1 --scaffold --allow-tools Bash Write Edit
 ```
 
+When CI's pinned Claude Code version is raised, run the probe by hand in a
+project set up with safe-setup, as `plugins/nbis-safety/VERIFICATION.md`
+describes, and add a dated record there. An eval cannot do this: the eval
+harness replaces the project's sandbox with its own.
+
 ## Removal
 
 Items without an owner, or whose evals fail on `main` for more than a

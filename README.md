@@ -6,13 +6,14 @@ installed on its own, so you only get what you choose.
 | Plugin | Contents |
 | --- | --- |
 | `nbis` | General skills: `deeper` and `verify` |
-| `nbis-safety` | Safe use of AI coding agents: `safe-setup` |
+| `nbis-safety` | Safe use of AI coding agents: `safe-setup` and `practice` |
 
 | Skill | What it does |
 | --- | --- |
 | `/nbis:deeper` | Turns a task into a deeper version of itself, not a bigger one: what a top professional would do, the raw material they would start from, their methods and tools, and what would show the result is right. Then rewrites your prompt. Runs only when you call it. |
 | `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
 | `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for a researcher's project or for NBIS's own open code. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
+| `/nbis-safety:practice` | Creates a small practice project with made-up data for a first session: a failing test to fix, a data folder that safe-setup keeps out of reach, and an install that asks you. Writes one new folder, never into an existing one. Runs only when you call it. |
 
 ## Install
 
@@ -122,8 +123,10 @@ class and where the data is, and then proposes:
   directories; Claude's own file tools are denied the data and secrets; the
   network is limited to package registries, and any other host needs your
   approval, or in auto mode the classifier's. For a hard block, the skill
-  offers `strictAllowlist` in your `~/.claude/settings.json`, the only place
-  Claude Code reads it.
+  offers `strictAllowlist` in your `~/.claude/settings.json`, together with
+  the registry list (with it on, a project's own list is ignored), the only place
+  Claude Code reads it (not verified: that hosts on the project's list
+  still connect with it on).
 - `AGENTS.md` plus `@AGENTS.md` in `CLAUDE.md`: **instructions** that
   Copilot, Codex, Cursor and Gemini read too. They guide the agent but are
   not a boundary.
@@ -173,9 +176,23 @@ the skill's report lists each file and line it added.
 Background: NBIS's gateway page on AI coding agents and the technical guide
 under it, on Confluence.
 
+To check the setup at any time, ask Claude to run `check.sh --verify` in a
+session in the project: it prints one line per protection, *configured*,
+*tested* (a live attempt was refused) or *not tested*, using a harmless
+test file the skill places in a blocked folder. safe-setup puts a copy of the check in the project, so the command is
+`bash .nbis-safety/check.sh --verify`. A read counts as *tested: blocked*
+only when the sandbox visibly hides the test folder; anything less clear
+is *not tested*.
+
 Tested with Claude Code 2.1.318 on Ubuntu 26.04 (CLI) and macOS 27.0.1 (CLI,
 VS Code extension and Claude Desktop): shell commands inside the sandbox
-could not read `~/.ssh`, the data directory or `.env`.
+could not read `~/.ssh`, the data directory or `.env`. What has been
+verified since, on which version and platform, and what has not, is in
+[VERIFICATION.md](plugins/nbis-safety/VERIFICATION.md). Not verified there
+so far: the `pip`, `uv`, `conda`,
+`mamba`, `npm` and push `ask` rules, memory off, a failed command not being
+retried outside the sandbox, `ssh` and `rsync` failing inside it, and the
+Windows/WSL2 note.
 
 ## Contributing
 
