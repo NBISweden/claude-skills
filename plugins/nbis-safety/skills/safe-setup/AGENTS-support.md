@@ -12,9 +12,12 @@ on the data.
   write a small synthetic example.
 - Sequencing, variant, expression or sample files elsewhere (`.fastq`,
   `.bam`, `.cram`, `.vcf`, `.h5ad`, `.rds`, sample sheets) may be real data
-  or synthetic test files. The first time you are about to open, print or
-  search one, tell me which file and why, and wait for my answer. Once I
-  have said a file or directory is fine, don't ask again for it.
+  or synthetic test files. Before you open, print or search one, tell me
+  which file and why, and ask whether it is synthetic or public test data.
+  Open it only if I say it is. If I am unsure, treat it as real data. Real
+  data stays off-limits, even if I say it's fine. My answer covers the
+  files I name, or a directory I say holds only test files, and lasts for
+  this session. Don't save it to memory.
 - Use synthetic data in tests and examples. Never copy real rows, sample
   IDs or file contents into code, tests, commit messages or chat.
 - If you come across what looks like personal data (names, personal
