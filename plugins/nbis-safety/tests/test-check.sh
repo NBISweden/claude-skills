@@ -66,7 +66,13 @@ cat > "$fakebin/curl" <<'EOF'
 #!/bin/sh
 case "$CURL_MODE" in open) exit 0 ;; offline) exit 6 ;; esac
 case "$*" in *pypi.org*) exit 0 ;; esac
-exit 7
+case "$CURL_MODE" in
+  tls) exit 60 ;;
+  otherproxy) printf 'HTTP/1.1 403 Forbidden\r\n\r\nconnect=403'; exit 56 ;;
+esac
+# the sandbox proxy's refusal, as Claude Code's proxy sends it
+printf 'HTTP/1.1 403 Forbidden\r\nX-Proxy-Error: blocked-by-allowlist\r\n\r\nconnect=403'
+exit 56
 EOF
 chmod +x "$fakebin/curl"
 ln -s "$(command -v jq)" "$nocurl/jq"
@@ -139,6 +145,12 @@ expect 'tested: NOT BLOCKED  a host outside the network list'
 out=$(verify offline)
 expect 'not tested: network (offline'
 refuse 'tested: blocked  a host'
+# a failure that is not the sandbox proxy's refusal is no block: a TLS error, or a 403 from another proxy
+for m in tls otherproxy; do
+  out=$(verify $m)
+  refuse 'tested: blocked  a host'
+  expect 'not tested: network (example.com failed'
+done
 # 10. no curl
 out=$(HOME=$home PATH=$nocurl "$BASH" "$check" --verify "$proj" 2>&1)
 expect 'not tested: network (curl is not installed)'

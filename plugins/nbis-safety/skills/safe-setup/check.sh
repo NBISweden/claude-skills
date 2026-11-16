@@ -98,9 +98,15 @@ if [ -n "$verify" ]; then
     line "not tested: network (the test host example.com is on a network list)"
   elif ! command -v curl >/dev/null; then line "not tested: network (curl is not installed)"
   elif ! curl -q -s -o /dev/null --max-time 5 https://pypi.org; then line "not tested: network (offline, or the listed host is unreachable)"
-  elif curl -q -s -o /dev/null --max-time 5 https://example.com; then line "tested: NOT BLOCKED  $what"
+  elif hdr=$(curl -q -s -o /dev/null -D - -w 'connect=%{http_connect}' --max-time 5 https://example.com); then line "tested: NOT BLOCKED  $what"
   elif [ -n "$outside" ]; then line "not tested: network (a host outside the list was refused, but this run is outside the sandbox)"
-  else line "tested: blocked  $what"
+  else
+    # Only the sandbox proxy's own refusal counts, read as Claude Code reads it; DNS, TLS and timeouts prove nothing
+    shopt -s nocasematch
+    case $hdr in
+      *"x-proxy-error: blocked-by-allowlist"*connect=403|*"x-deny-reason: host_not_allowed"*connect=403) line "tested: blocked  $what" ;;
+      *) line "not tested: network (example.com failed, but not with the sandbox's refusal: DNS, TLS, a timeout or another proxy)" ;;
+    esac
   fi
   exit "$status"
 fi
