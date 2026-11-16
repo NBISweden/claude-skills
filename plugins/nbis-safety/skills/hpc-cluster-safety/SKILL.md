@@ -131,7 +131,9 @@ Nextflow/Snakemake resource config.
   `MaxMemPerNode=UNLIMITED` sets no limit of its own; the cluster-wide limit from
   `scontrol show config` still applies, if it is set. Size the request against
   them; do not pick a round "plenty" number. When trimming an oversized request,
-  keep headroom above `MaxRSS`.
+  keep headroom above `MaxRSS`. `MaxRSS` is the largest single task, so for a
+  step with several tasks on one node (`srun -n`, MPI) multiply it by the task
+  count first.
 - After a run, compare request, allocation and use from accounting. Finished jobs
   leave `scontrol show job` after `MinJobAge` (300 s by default), and `sstat`
   only covers running ones:
@@ -177,9 +179,12 @@ be undone once the data has left or is gone.
   `--files-from` a list you checked) and dry-run again. Do not open the files to
   check. If unsure, stop and ask.
 - `--archive` copies a symlink, not its target, so deleting the target leaves a
-  broken link. Before deleting a source you copied, re-run the same copy with
-  `--dry-run --checksum --itemize-changes`: an empty list means nothing is left
-  to copy.
+  broken link. Before deleting a source you copied, re-run the copy as
+  `rsync --archive --dry-run --checksum --itemize-changes` with only the options
+  the copy needed to copy everything: `--ignore-existing`, `--update`,
+  `--exclude` and `--max-size` skip files without a word. Delete only if it
+  exits 0 and prints an empty list. A file the copy excluded was never copied,
+  so do not delete it.
 - Then run the same command without `--dry-run`. Any change to the options needs
   a new dry run.
 - If nobody can answer, or the project's rules forbid running `rsync`, `scp`,
