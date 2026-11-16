@@ -21,6 +21,7 @@ if [ -n "$verify" ]; then
   p=.claude/settings.json l=.claude/settings.local.json u=~/.claude/settings.json
   pbad='' ubad='' pj='' uj='' aj=''
   # Claude Code's merge: a later file overrides single values, lists from every file add up
+  # shellcheck disable=SC2016  # a jq program: $a and $b are jq variables
   merge='def m($a; $b): if ($a|type) == "object" and ($b|type) == "object" then reduce ($b|keys_unsorted[]) as $k ($a; .[$k] = m($a[$k]; $b[$k]))
     elif ($a|type) == "array" and ($b|type) == "array" then $a + $b elif $b == null then $a else $b end;'
   if ! command -v jq >/dev/null; then pbad="jq is not installed" ubad=$pbad

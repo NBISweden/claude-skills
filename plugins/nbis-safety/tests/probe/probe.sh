@@ -22,6 +22,7 @@ echo "read canary content: $(r grep -qx 'nbis-safety canary: this file holds not
 echo "ls canary folder: $(count .nbis-safety/blocked)"
 echo "read data file: $(r cat "$data")"
 # mktemp: a new file of its own, so no existing file or symlink is overwritten or removed
+# shellcheck disable=SC2016  # the inner sh expands $t, not this shell
 echo "write in project: $(r sh -c 't=$(mktemp ./.nbis-probe.XXXXXX) && rm -f -- "$t"')"
 echo "write in home: $(r touch "$marker")"
 echo "listed host: $(r curl -q -s -o /dev/null --max-time 8 https://pypi.org)"
