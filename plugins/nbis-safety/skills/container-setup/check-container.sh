@@ -10,7 +10,7 @@ set -u
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "${1:-.}" || exit 1
 project=$(pwd -P)
-# shellcheck source=../safe-setup/lib-project.sh
+# shellcheck source=../safe-setup/lib-project.sh disable=SC1091  # lib-project.sh is checked on its own
 . "$here/../safe-setup/lib-project.sh"
 
 proc=${CHECK_PROC:-/proc}
@@ -98,6 +98,7 @@ else
   }
   report "--settings file${sfile:+ ($sfile)}" "${sfile:-/nonexistent}"
   [ -z "$sfile" ] && say "(no --settings argument found on PID 1's command line)"
+  # shellcheck disable=SC2088  # the quoted ~ is a label for the user, not a path
   report "~/.claude/settings.json" ~/.claude/settings.json
   report ".claude/settings.json" .claude/settings.json
   report ".claude/settings.local.json" .claude/settings.local.json

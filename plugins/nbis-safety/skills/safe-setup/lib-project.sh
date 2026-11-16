@@ -36,6 +36,7 @@ find . -maxdepth 6 \( "${prune[@]}" \) -prune -o -type f \( -name '*.fastq*' -o 
 say "-- existing agent files"
 for f in .claude/settings.json .claude/settings.local.json CLAUDE.md .claude/CLAUDE.md CLAUDE.local.md AGENTS.md \
          .github/copilot-instructions.md .vscode/settings.json .mcp.json; do [ -e "$f" ] && say "exists: $f"; done
+# shellcheck disable=SC2154  # $project is set by the script that sources this file
 d=$(dirname "$project")
 while [ "$d" != / ]; do
   for f in "$d/CLAUDE.md" "$d/.claude/CLAUDE.md" "$d/CLAUDE.local.md"; do

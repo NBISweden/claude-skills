@@ -9,7 +9,7 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "${1:-.}" || exit 1
 project=$(pwd -P)
 
-# shellcheck source=lib-project.sh
+# shellcheck source=lib-project.sh disable=SC1091  # lib-project.sh is checked on its own
 . "$here/lib-project.sh"
 
 check_claude_version
