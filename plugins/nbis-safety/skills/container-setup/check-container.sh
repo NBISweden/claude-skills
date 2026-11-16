@@ -91,24 +91,34 @@ if [ -r "$proc/1/cmdline" ]; then
 fi
 if ! command -v jq >/dev/null; then say "jq not installed, skipped: check these files by hand"
 else
-  val() { jq -r --arg k "$2" '.sandbox[$k] | if . == null then "unset" else tostring end' "$1" 2>/dev/null || echo "not valid JSON"; }
+  # Prints true/false/unset/other, never the value itself. $1: key; the JSON is read from stdin.
+  val() { jq -r --arg k "$1" '.sandbox[$k] | if . == null then "unset" elif . == true or . == false then tostring else "other" end' 2>/dev/null || echo "not valid JSON"; }
   report() {   # $1: label, $2: file
-    if [ -f "$2" ]; then say "$1: sandbox.enabled $(val "$2" enabled), failIfUnavailable $(val "$2" failIfUnavailable)"
+    if [ -f "$2" ]; then say "$1: sandbox.enabled $(val enabled <"$2"), failIfUnavailable $(val failIfUnavailable <"$2")"
     else say "$1: absent"; fi
   }
-  report "--settings file${sfile:+ ($sfile)}" "${sfile:-/nonexistent}"
+  # --settings takes a path or a JSON string. Never print the JSON: it can hold tokens.
+  inline=no
+  [[ $sfile =~ ^[[:space:]]*\{ ]] && inline=yes
+  if [ "$inline" = yes ]; then
+    say "--settings (inline JSON): sandbox.enabled $(val enabled <<<"$sfile"), failIfUnavailable $(val failIfUnavailable <<<"$sfile")"
+  else
+    report "--settings file${sfile:+ ($sfile)}" "${sfile:-/nonexistent}"
+  fi
   [ -z "$sfile" ] && say "(no --settings argument found on PID 1's command line)"
   # shellcheck disable=SC2088  # the quoted ~ is a label for the user, not a path
   report "~/.claude/settings.json" ~/.claude/settings.json
   report ".claude/settings.json" .claude/settings.json
   report ".claude/settings.local.json" .claude/settings.local.json
   disabled=no
-  [ -n "$sfile" ] && [ -f "$sfile" ] && [ "$(val "$sfile" enabled)" = false ] && disabled=yes
+  if [ "$inline" = yes ]; then [ "$(val enabled <<<"$sfile")" = false ] && disabled=yes
+  elif [ -n "$sfile" ] && [ -f "$sfile" ] && [ "$(val enabled <"$sfile")" = false ]; then disabled=yes
+  fi
   say "--settings file disables the sandbox: $disabled"
   if [ "$disabled" = no ]; then
     for f in .claude/settings.json .claude/settings.local.json; do
       [ -f "$f" ] || continue
-      if [ "$(val "$f" enabled)" = true ] || [ "$(val "$f" failIfUnavailable)" = true ]; then
+      if [ "$(val enabled <"$f")" = true ] || [ "$(val failIfUnavailable <"$f")" = true ]; then
         say "WARNING: $f turns the sandbox on or requires it, and the --settings file does not disable it: every shell command fails in a container (bwrap cannot create a namespace). Add {\"sandbox\": {\"enabled\": false}} to the container-only settings file; leave the project file alone."
       fi
     done

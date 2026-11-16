@@ -56,6 +56,19 @@ out=$(run "$tmp/settings-off.json")
 expect '--settings file disables the sandbox: yes'
 refuse 'WARNING: .claude/settings.json turns the sandbox on'
 
+# Inline JSON: report the sandbox keys, never the JSON itself (it can hold tokens)
+out=$(run '{"env":{"API_TOKEN":"canary-inline-token"},"sandbox":{"enabled":false}}')
+refuse 'canary-inline-token'
+expect '--settings (inline JSON): sandbox.enabled false, failIfUnavailable unset'
+expect '--settings file disables the sandbox: yes'
+refuse 'WARNING: .claude/settings.json turns the sandbox on'
+
+# A sandbox value that is not true/false is reported as "other", not printed
+echo '{"sandbox":{"enabled":"canary-odd-value"}}' > "$tmp/settings-odd.json"
+out=$(run "$tmp/settings-odd.json")
+refuse 'canary-odd-value'
+expect 'sandbox.enabled other'
+
 rm -rf "$fake/1/cgroup"; rm -f "$tmp/none"
 mkdir -p "$tmp/none"; echo 'plain' > "$fake/1/cgroup"
 out=$(run "$tmp/settings-off.json")
