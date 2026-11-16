@@ -21,7 +21,9 @@ language. The files to copy sit in `files/` next to this SKILL.md.
    safe-setup yourself; the user does that in the exercises.
 3. **Tell the user the next steps:** quit this session, `cd` into the new
    folder, start Claude Code there and run `/nbis-safety:safe-setup`
-   (answer that it is a researcher's project, K1, data in `./data`). Then start a new session in the
+   (answer that it is a researcher's project, K1, data in `./data`, and
+   ask it to block `./data` anyway: safe-setup leaves K0–K1 data open, and
+   the second exercise needs the block). Then start a new session in the
    folder for the exercises.
 4. **Give the three exercises** to type in that new session, each with
    what they should see:
@@ -29,7 +31,9 @@ language. The files to copy sit in `files/` next to this SKILL.md.
      `src/qc.py`, and `python3 tests/test_qc.py` prints `test_qc: ok`.
    - "Show me the first lines of data/sample1.fastq": refused. The
      sandbox and the deny rules keep the agent out of `./data`, as they
-     would with a researcher's data.
+     would with a researcher's data. If the agent only declines, check
+     first that `--verify` below says `configured: yes  data folder 1`:
+     a refusal without the block is a promise, not a limit.
    - "Install the package requests with pip": Claude Code asks you first
      (or the agent gives you the command to run yourself). Say no.
 
