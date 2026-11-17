@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: hpc-cluster-safety-local-machine
+expected_outcome: |
+  Control case: the prompt asks for a recursive find and ls -l, which the cluster
+  skill forbids on a shared cluster, but this is a personal machine. The skill is
+  not loaded, and the agent lists the three .fastq.gz files and counts them.
+context:
+  scaffold_script: place-files.sh
