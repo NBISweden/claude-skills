@@ -6,7 +6,7 @@ installed on its own, so you only get what you choose.
 | Plugin | Contents |
 | --- | --- |
 | `nbis` | General skills: `deeper` and `verify` |
-| `nbis-safety` | Safe use of AI coding agents: `safe-setup` and `hpc-cluster-safety` |
+| `nbis-safety` | Safe use of AI coding agents: `safe-setup`, `hpc-cluster-safety` and `container-setup` |
 
 | Skill | What it does |
 | --- | --- |
@@ -14,6 +14,7 @@ installed on its own, so you only get what you choose.
 | `/nbis:verify` | Checks that an algorithm, tool or pipeline does what you claim: property-based and differential tests, workflow and stochastic tests, real data with a known answer, TLA+ for concurrency, Lean 4 for a core algorithm. A bug counts only when a test against the real code fails. |
 | `/nbis-safety:safe-setup` | Checks a project and sets up Claude Code for it the NBIS way: sandbox on, home and data directories out of reach, deny rules for secrets, and an `AGENTS.md` for a researcher's project or for NBIS's own open code. Stops for K3 data. Shows everything and writes only when you say yes. Runs only when you call it. |
 | `/nbis-safety:hpc-cluster-safety` | Rules for working on a shared HPC cluster, over SSH or on a login node: heavy work goes through the scheduler, searches stay inside the project, job polling is at most once a minute, scratch space is asked for, memory requests are checked against the partition's CPU limits, and copies and deletions get a dry run first. Loads when Claude works on a cluster. |
+| `/nbis-safety:container-setup` | The same checks and questions for Claude Code running inside a Docker or Podman container, where the container is the boundary: deny rules for secrets and data and an `AGENTS.md`, but no sandbox settings. Reviews the container's capabilities, mounts, network and environment, and suggests `docker run` flags. Stops for K3 data. Runs only when you call it. |
 
 ## Install
 
@@ -177,6 +178,18 @@ under it, on Confluence.
 Tested with Claude Code 2.1.318 on Ubuntu 26.04 (CLI) and macOS 27.0.1 (CLI,
 VS Code extension and Claude Desktop): shell commands inside the sandbox
 could not read `~/.ssh`, the data directory or `.env`.
+
+### In a container
+
+If you run Claude Code inside a container, use `/nbis-safety:container-setup`
+instead. The sandbox cannot start in Docker: with a project setting that
+requires it, every shell command fails. The skill writes only deny rules and
+`AGENTS.md`, checks the container (`check-container.sh`: capabilities,
+`no-new-privileges`, mounts, Docker socket, outbound network, secret-like
+environment variable names, sandbox settings that would break shell
+commands) and tells you which `docker run` flags close the gaps. The deny
+rules do not cover shell commands, so keep data the agent may not see out of
+the container.
 
 ## Contributing
 
