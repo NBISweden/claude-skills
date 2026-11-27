@@ -8,4 +8,6 @@
 /.github/                           @jhagberg @viklund
 /plugins/nbis-safety/skills/hpc-cluster-safety/       @mahesh-panchal @jhagberg @viklund
 /plugins/nbis-safety/evals/hpc-cluster-safety-*/      @mahesh-panchal @jhagberg @viklund
+/plugins/nbis-safety/evals/safe-setup-no-data/         @MalinAhlberg @jhagberg
+/plugins/nbis-safety/evals/safe-setup-existing-agents/ @MalinAhlberg @jhagberg
 /plugins/nbis-safety/tests/*hpc*                      @mahesh-panchal @jhagberg @viklund
