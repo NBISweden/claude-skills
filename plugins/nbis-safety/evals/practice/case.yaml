@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: practice
+expected_outcome: |
+  Creates ./nbis-agent-practice with the five practice files written by the
+  Write tool, the planted bug in src/qc.py kept. Tells the user to start
+  Claude Code in the new folder and run /nbis-safety:safe-setup, and lists
+  the three exercises. Does not run safe-setup itself or fix the bug.
