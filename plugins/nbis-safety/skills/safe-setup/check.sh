@@ -7,6 +7,9 @@
 set -u
 cd "${1:-.}" || exit 1
 project=$(pwd -P)
+# Resolved like $project, so a symlinked home (macOS /var -> /private/var) compares equal.
+# If home cannot be entered (a sandbox can hide it), fall back to $HOME, never to an empty prefix.
+home=$(cd ~ 2>/dev/null && pwd -P) || home=$HOME
 
 say() { printf '%s\n' "$*"; }
 ver_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
@@ -44,21 +47,23 @@ case "$(uname -s)" in
 esac
 
 say "== Toolchain under home (needs allowRead when home is denied)"
-dirs=()   # paths relative to $HOME
+dirs=()   # paths relative to $home
 skipped=()
-keep() {   # $1: absolute directory to re-open for reading
-  case "$1" in "$HOME"/*) ;; *) return ;; esac
-  case "$1/" in "$project"/*) return ;; esac   # inside the project: readable already
-  case "$project/" in "$1"/*) skipped+=("${1#"$HOME"/}"); return ;; esac
-  dirs+=("${1#"$HOME"/}")
+keep() {   # $1: directory to re-open for reading
+  local r
+  r=$(cd "$1" 2>/dev/null && pwd -P) || return   # resolved, as $project and $home are
+  case "$r" in "$home"/*) ;; *) return ;; esac
+  case "$r/" in "$project"/*) return ;; esac   # inside the project: readable already
+  case "$project/" in "$r"/*) skipped+=("${r#"$home"/}"); return ;; esac
+  dirs+=("${r#"$home"/}")
 }
 root_of() {   # $1: executable path; prints the install root (the part before the last /bin/)
   # shortcut: assumes the <root>/bin/<tool> layout of conda, venv, pyenv, nvm; fine for those
   local r=${1%/bin/*}
   [ "$r" = "$1" ] && r=$(dirname "$1")
   case "$r" in
-    "$HOME") echo "$HOME/bin" ;;
-    "$HOME/.local") echo "$HOME/.local/bin"; echo "$HOME/.local/lib" ;;   # not ~/.local/share
+    "$home") echo "$home/bin" ;;
+    "$home/.local") echo "$home/.local/bin"; echo "$home/.local/lib" ;;   # not ~/.local/share
     *) echo "$r" ;;
   esac
 }
@@ -75,8 +80,11 @@ IFS=: read -ra path_dirs <<<"$PATH"
 for p in "${path_dirs[@]}"; do
   [ -d "$p" ] && keep "$p"
 done
-if [ "${#dirs[@]}" -gt 0 ]; then printf '%s\n' "${dirs[@]/#/\~/}" | sort -u; else say "(none)"; fi
-[ "${#skipped[@]}" -gt 0 ] && printf 'SKIPPED (holds the project, never allow it): %s\n' "${skipped[@]/#/\~/}" | sort -u
+# From a variable: bash 3.2 (macOS's /bin/bash) keeps the backslash of a literal \~ here
+# shellcheck disable=SC2088  # a label for the user, not a path to expand
+tilde='~/'
+if [ "${#dirs[@]}" -gt 0 ]; then printf '%s\n' "${dirs[@]/#/$tilde}" | sort -u; else say "(none)"; fi
+[ "${#skipped[@]}" -gt 0 ] && printf 'SKIPPED (holds the project, never allow it): %s\n' "${skipped[@]/#/$tilde}" | sort -u
 
 say "== Existing sandbox settings (merged with what safe-setup writes; review each)"
 if command -v jq >/dev/null; then
@@ -109,7 +117,7 @@ else say "jq not installed, skipped: check these files by hand"
 fi
 
 say "== Project: $project"
-case "$project" in "$HOME") say "WARNING: this is your home directory, run from a project folder" ;; esac
+case "$project" in "$home") say "WARNING: this is your home directory, run from a project folder" ;; esac
 prune=(-name .git -o -name node_modules -o -name .snakemake -o -name work -o -name .venv)
 say "-- secret-like files (names only; SKILL.md denies the same patterns)"
 find . -maxdepth 5 \( "${prune[@]}" \) -prune -o -type f \( -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' \
@@ -126,7 +134,7 @@ d=$(dirname "$project")
 while [ "$d" != / ]; do
   for f in "$d/CLAUDE.md" "$d/.claude/CLAUDE.md" "$d/CLAUDE.local.md"; do
     # ~/.claude/CLAUDE.md is user memory and does not stop AGENTS.md from loading
-    [ "$f" != "$HOME/.claude/CLAUDE.md" ] && [ -e "$f" ] && say "exists above project: $f"
+    [ "$f" != "$home/.claude/CLAUDE.md" ] && [ -e "$f" ] && say "exists above project: $f"
   done
   d=$(dirname "$d")
 done

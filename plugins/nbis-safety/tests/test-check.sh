@@ -41,6 +41,7 @@ expect '~/research/code/.venv'
 refuse_line '~/research'
 refuse_line '~/.local'
 expect '~/.local/bin'
+refuse '\~'   # bash 3.2 kept the backslash of a literal \~
 # a CONDA_PREFIX that holds the project is never re-opened
 expect 'SKIPPED (holds the project, never allow it): ~/work'
 refuse_line '~/work'
@@ -56,6 +57,12 @@ expect 'permissions.deny Read(/**/.env) anchors at ~/.claude here'
 expect 'permissions.deny Read(//**/*.pem) is not enforced for shell commands on Linux'
 refuse 'Read(**/.env) anchors'
 refuse 'Read(~/.ssh/**) anchors'
+
+# a CONDA_PREFIX that holds the project, through a symlinked home (macOS /var -> /private/var, some servers)
+ln -s "$home" "$tmp/homelink"
+out=$(HOME=$tmp/homelink CONDA_PREFIX=$tmp/homelink/work bash "$here/../skills/safe-setup/check.sh" "$tmp/homelink/work/proj" 2>&1)
+expect 'SKIPPED (holds the project, never allow it): ~/work'
+refuse_line '~/work'
 
 [ "$fail" = 0 ] && echo "test-check: ok"
 exit "$fail"
