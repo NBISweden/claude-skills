@@ -41,6 +41,7 @@ expect '~/research/code/.venv'
 refuse_line '~/research'
 refuse_line '~/.local'
 expect '~/.local/bin'
+refuse '\~'   # bash 3.2 kept the backslash of a literal \~
 # a CONDA_PREFIX that holds the project is never re-opened
 expect 'SKIPPED (holds the project, never allow it): ~/work'
 refuse_line '~/work'

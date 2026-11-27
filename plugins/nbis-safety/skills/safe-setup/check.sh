@@ -75,8 +75,11 @@ IFS=: read -ra path_dirs <<<"$PATH"
 for p in "${path_dirs[@]}"; do
   [ -d "$p" ] && keep "$p"
 done
-if [ "${#dirs[@]}" -gt 0 ]; then printf '%s\n' "${dirs[@]/#/\~/}" | sort -u; else say "(none)"; fi
-[ "${#skipped[@]}" -gt 0 ] && printf 'SKIPPED (holds the project, never allow it): %s\n' "${skipped[@]/#/\~/}" | sort -u
+# From a variable: bash 3.2 (macOS's /bin/bash) keeps the backslash of a literal \~ here
+# shellcheck disable=SC2088  # a label for the user, not a path to expand
+tilde='~/'
+if [ "${#dirs[@]}" -gt 0 ]; then printf '%s\n' "${dirs[@]/#/$tilde}" | sort -u; else say "(none)"; fi
+[ "${#skipped[@]}" -gt 0 ] && printf 'SKIPPED (holds the project, never allow it): %s\n' "${skipped[@]/#/$tilde}" | sort -u
 
 say "== Existing sandbox settings (merged with what safe-setup writes; review each)"
 if command -v jq >/dev/null; then
